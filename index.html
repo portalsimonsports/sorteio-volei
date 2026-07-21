@@ -3,69 +3,110 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#061426">
-  <meta name="description" content="Inscrição, sorteio, chaveamento e placares de duplas de vôlei.">
-  <title>Sorteio de Vôlei</title>
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
+  <title>Sorteio de Duplas de Vôlei</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body data-page="public">
-  <header class="topbar">
+  <header class="topbar public-topbar">
     <a class="brand" href="./">
       <span class="brand-ball">🏐</span>
-      <span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Adultos e crianças</small></span>
+      <span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Torneio de duplas</small></span>
     </a>
+    <nav class="public-nav" aria-label="Navegação principal">
+      <a href="#inscricao">Inscrição</a>
+      <a href="#participantes">Participantes</a>
+      <a href="#chaveamento">Chaveamento</a>
+    </nav>
     <div class="status"><span id="connectionDot" class="status-dot"></span><span id="connectionText">Carregando...</span></div>
   </header>
 
   <main>
-    <section class="hero">
-      <div class="ball">🏐</div>
+    <section class="hero hero-pro">
+      <div class="hero-glow hero-glow-one"></div>
+      <div class="hero-glow hero-glow-two"></div>
       <div class="hero-content">
-        <span class="eyebrow">Pote A — Adultos • Pote B — Crianças</span>
+        <div class="hero-badge"><span>🏐</span> Torneio de duplas</div>
         <h1 id="eventTitle">Sorteio de Duplas de Vôlei</h1>
-        <p id="eventMessage">Inscrições abertas.</p>
-        <div class="hero-actions"><a class="btn primary" href="#inscricao">Fazer inscrição</a><a class="btn ghost" href="#chaveamento">Ver chaveamento</a></div>
-        <div class="audit" id="auditLine">Aguardando dados</div>
+        <p id="eventMessage">Inscrições abertas para adultos e crianças.</p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#inscricao">Fazer inscrição</a>
+          <a class="btn ghost" href="#chaveamento">Acompanhar competição</a>
+        </div>
+        <div class="hero-stats" aria-label="Resumo do torneio">
+          <article><strong id="countAHero">0</strong><span>Adultos</span></article>
+          <article><strong id="countBHero">0</strong><span>Crianças</span></article>
+          <article><strong id="countTeamsHero">0</strong><span>Duplas</span></article>
+        </div>
+        <div class="audit" id="auditLine">Atualização automática</div>
+      </div>
+    </section>
+
+    <section class="countdown-stage" id="countdownStage" hidden aria-live="assertive">
+      <div class="countdown-card">
+        <span class="countdown-kicker">Sorteio ao vivo</span>
+        <div class="countdown-ball">🏐</div>
+        <h2>O sorteio começa em</h2>
+        <strong class="countdown-clock" id="countdownClock">10:00</strong>
+        <p id="countdownMessage">Preparando a formação das duplas e o chaveamento.</p>
+        <div class="countdown-progress"><span id="countdownProgress"></span></div>
+        <small>Esta página será atualizada automaticamente ao final da contagem.</small>
       </div>
     </section>
 
     <section class="section" id="inscricao">
-      <div class="panel">
-        <div class="section-head"><div><span class="kicker">Inscrição</span><h2>Inscreva-se no torneio</h2></div></div>
+      <div class="panel signup-panel">
+        <div class="section-head">
+          <div><span class="kicker">Inscrição</span><h2>Participe do torneio</h2><p>Informe seus dados. A categoria é definida automaticamente pela idade.</p></div>
+          <span class="panel-icon">✍️</span>
+        </div>
         <form class="signup-grid" id="signupForm">
           <label>Nome completo<input id="signupName" maxlength="80" autocomplete="name" required placeholder="Nome do participante"></label>
           <label>Data de nascimento<input id="signupBirth" type="date" required></label>
-          <label>Nota de desempenho<input id="signupScore" type="number" min="0" max="10" step="1" required placeholder="0 a 10"></label>
+          <label>Nota técnica<input id="signupScore" type="number" min="0" max="10" step="1" required placeholder="0 a 10"></label>
           <button class="btn primary" id="signupButton" type="submit">Confirmar inscrição</button>
         </form>
-        <div class="info-chips"><span>18 anos ou mais: Pote A — Adultos</span><span>Menos de 18 anos: Pote B — Crianças</span><span>Adultos: nota mínima 5</span></div>
+        <div class="info-chips"><span>18 anos ou mais: Adulto</span><span>Menos de 18 anos: Criança</span><span>A nota é usada apenas internamente no equilíbrio das duplas</span></div>
         <div class="message" id="signupMessage" aria-live="polite"></div>
       </div>
     </section>
 
     <section class="section compact" id="participantes">
-      <div class="section-head"><div><span class="kicker">Inscritos</span><h2>Participantes por categoria</h2></div><div class="kpis"><article><strong id="countA">0</strong><span>Adultos</span></article><article><strong id="countB">0</strong><span>Crianças</span></article><article><strong id="countTeams">0</strong><span>Duplas</span></article></div></div>
-      <div class="pots"><article class="pot pot-a card"><header><span class="pot-badge">A</span><div><h3>Adultos</h3></div></header><div class="players" id="potAList"></div></article><article class="pot pot-b card"><header><span class="pot-badge">B</span><div><h3>Crianças</h3></div></header><div class="players" id="potBList"></div></article></div>
+      <div class="section-head">
+        <div><span class="kicker">Participantes</span><h2>Inscritos por categoria</h2><p>Na página pública são exibidos somente o nome e a idade.</p></div>
+        <div class="kpis"><article><strong id="countA">0</strong><span>Adultos</span></article><article><strong id="countB">0</strong><span>Crianças</span></article><article><strong id="countTeams">0</strong><span>Duplas</span></article></div>
+      </div>
+      <div class="pots">
+        <article class="pot pot-a card"><header><span class="pot-badge">A</span><div><h3>Adultos</h3><small>18 anos ou mais</small></div></header><div class="players" id="potAList"></div></article>
+        <article class="pot pot-b card"><header><span class="pot-badge">B</span><div><h3>Crianças</h3><small>Menos de 18 anos</small></div></header><div class="players" id="potBList"></div></article>
+      </div>
     </section>
 
     <section class="section compact" id="regras">
-      <div class="section-head"><div><span class="kicker">Regulamento</span><h2>Regras das partidas</h2></div></div>
+      <div class="section-head"><div><span class="kicker">Regulamento</span><h2>Formato das partidas</h2></div></div>
       <div class="rules">
-        <article class="rule card"><strong>Melhor de 3 sets</strong><span>A dupla que vencer dois sets ganha a partida.</span></article>
-        <article class="rule card"><strong>25 pontos</strong><span>O 1º e o 2º sets terminam a partir de 25 pontos.</span></article>
-        <article class="rule card"><strong>15 pontos</strong><span>O 3º set, quando necessário, termina a partir de 15 pontos.</span></article>
-        <article class="rule card"><strong>Vantagem de 2</strong><span>Todos os sets exigem diferença mínima de dois pontos, sem limite máximo.</span></article>
-        <article class="rule card"><strong>Ponto por rally</strong><span>Toda disputa concluída gera um ponto para uma das duplas.</span></article>
-        <article class="rule card"><strong>Intervalo de 10 minutos</strong><span>A próxima partida é liberada dez minutos após o encerramento da anterior.</span></article>
+        <article class="rule card"><span class="rule-number">01</span><strong>Melhor de 3 sets</strong><span>A dupla que vencer dois sets ganha a partida.</span></article>
+        <article class="rule card"><span class="rule-number">02</span><strong>25 pontos</strong><span>O 1º e o 2º sets terminam a partir de 25 pontos.</span></article>
+        <article class="rule card"><span class="rule-number">03</span><strong>15 pontos</strong><span>O set decisivo termina a partir de 15 pontos.</span></article>
+        <article class="rule card"><span class="rule-number">04</span><strong>Vantagem de 2</strong><span>Todos os sets exigem diferença mínima de dois pontos.</span></article>
+        <article class="rule card"><span class="rule-number">05</span><strong>Intervalo</strong><span>A próxima partida é liberada dez minutos após a anterior.</span></article>
+        <article class="rule card"><span class="rule-number">06</span><strong>3º lugar</strong><span>Os perdedores das semifinais disputam a terceira colocação.</span></article>
       </div>
-      <div class="rule-note">Formato de vôlei de quadra adaptado para melhor de 3 sets. Os dois primeiros sets vão a 25 pontos e o set decisivo vai a 15.</div>
     </section>
 
-    <section class="section compact" id="equipes"><div class="section-head"><div><span class="kicker">Duplas</span><h2>Equipes formadas</h2><p id="balanceSummary">As equipes serão reveladas quando o sorteio for realizado.</p></div></div><div class="teams" id="teamsGrid"></div></section>
-    <section class="section compact" id="chaveamento"><div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2></div></div><div class="bracket-shell"><div class="bracket" id="bracket"></div></div></section>
+    <section class="section compact" id="equipes">
+      <div class="section-head"><div><span class="kicker">Duplas</span><h2>Equipes formadas</h2><p id="balanceSummary">As equipes serão reveladas após a contagem regressiva.</p></div></div>
+      <div class="teams" id="teamsGrid"></div>
+    </section>
+
+    <section class="section compact" id="chaveamento">
+      <div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2><p>Final, disputa de terceiro lugar e resultados atualizados automaticamente.</p></div></div>
+      <div class="bracket-shell"><div class="bracket" id="bracket"></div></div>
+    </section>
   </main>
 
-  <footer class="footer"><span>Sorteio de Vôlei</span><span>Melhor de 3 sets • 25, 25 e 15 pontos • 10 minutos entre partidas</span></footer>
+  <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Melhor de 3 sets • Final e disputa de 3º lugar</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
   <script src="config.js"></script>
   <script src="assets/core-data.js"></script>
