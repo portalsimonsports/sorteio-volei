@@ -24,3 +24,4 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  return{ok:true,adminKey:p.getProperty('ADMIN_KEY'),webAppUrl:url,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
 }
 function INSTALAR_SISTEMA_COMPLETO(){return CONFIGURAR_SISTEMA_INICIAL();}
+function REGISTRAR_URL_WEB_APP(){const url=ScriptApp.getService().getUrl()||'';if(!url)throw Error('Implante primeiro como Aplicativo da Web.');definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');Logger.log('WEB_APP_URL: '+url);return{ok:true,webAppUrl:url};}
