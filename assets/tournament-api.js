@@ -71,6 +71,11 @@
         : '';
     },
     toast,
-    winnerTeam: T.winnerTeam
+    winnerTeam: T.winnerTeam,
+    winner: T.winnerTeam,
+    date: B.parseDate,
+    read: B.readState,
+    match: B.normalizeMatch,
+    index: B.adjustedIndex
   };
 })();
