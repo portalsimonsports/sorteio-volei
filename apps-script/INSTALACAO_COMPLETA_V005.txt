@@ -1,0 +1,45 @@
+SORTEIO DE VÔLEI — INSTALAÇÃO COMPLETA V005
+
+PLANILHA:
+https://docs.google.com/spreadsheets/d/1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo/edit
+
+ARQUIVOS DO BACKEND:
+1. Code.gs
+2. Instalacao.gs
+3. Automacao.gs
+4. Cadastro.gs
+5. Equipes.gs
+6. ChaveamentoBase.gs
+7. ChaveamentoDados.gs
+8. SorteioExecucao.gs
+9. SorteioAtivacao.gs
+10. PlacarRegras.gs
+11. PlacarRegistro.gs
+12. Estado.gs
+13. appsscript.json
+
+FUNÇÃO ÚNICA PARA INICIAR:
+CONFIGURAR_SISTEMA_INICIAL
+
+A função:
+- confere os cabeçalhos da planilha;
+- cria a chave administrativa;
+- registra as regras 25/25/15;
+- configura o intervalo de 10 minutos;
+- cria o acionador automático de um minuto;
+- registra a versão V005.
+
+IMPLANTAÇÃO:
+Tipo: Aplicativo da Web
+Executar como: proprietário do projeto
+Acesso: qualquer pessoa
+
+Depois da implantação, copiar a URL terminada em /exec para API_BASE no arquivo config.js do repositório.
+
+REGRAS:
+- vôlei de quadra;
+- melhor de 3 sets;
+- 1º e 2º sets: 25 pontos;
+- 3º set: 15 pontos;
+- vantagem mínima: 2 pontos;
+- intervalo entre partidas: 10 minutos.
