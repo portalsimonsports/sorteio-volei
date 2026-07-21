@@ -36,10 +36,14 @@
   });
 
   ui.clearAll.addEventListener('click', async () => {
-    if (!confirm('Apagar participantes, equipes, placares e chaveamento deste navegador?')) return;
+    const local = C.DEMO_MODE || !C.API_BASE;
+    const text = local
+      ? 'Apagar participantes, equipes, placares e chaveamento deste navegador?'
+      : 'Apagar definitivamente participantes, equipes, placares e histórico da planilha?';
+    if (!confirm(text)) return;
     try {
       await V.request('limparTudo');
-      V.toast('Dados locais apagados.');
+      V.toast(local ? 'Dados locais apagados.' : 'Dados da planilha apagados.');
       await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
