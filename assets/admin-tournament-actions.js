@@ -11,11 +11,11 @@
   const saveScore = document.getElementById('saveScore');
 
   ui.drawNow.addEventListener('click', async () => {
-    if (!confirm('Realizar o sorteio e montar o chaveamento agora?')) return;
-    A.busy(ui.drawNow, true, 'Sorteando...');
+    if (!confirm('Iniciar a contagem regressiva pública de 10 minutos para o sorteio?')) return;
+    A.busy(ui.drawNow, true, 'Iniciando contagem...');
     try {
-      await V.request('sortearAgora');
-      V.toast('Sorteio realizado.');
+      await V.request('iniciarContagem', { segundos: 600 });
+      V.toast('Contagem regressiva iniciada na página pública.');
       await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
