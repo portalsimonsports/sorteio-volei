@@ -2,8 +2,9 @@
 function CONFIGURAR_SISTEMA_INICIAL(){
  garantirEstrutura_();
  const p=props_();
- if(!p.getProperty('ADMIN_KEY'))p.setProperty('ADMIN_KEY',Utilities.getUuid().replace(/-/g,'').slice(0,24));
+ const adminKey=obterChaveAdmin_();
  if(!p.getProperty('ACTIVATION_SALT'))p.setProperty('ACTIVATION_SALT',Utilities.getUuid()+Utilities.getUuid());
+ definirConfig_('ADMIN_KEY',adminKey,'Chave administrativa do painel');
  definirConfig_('URL_SITE',VOLEI.SITE_URL,'Página pública independente');
  definirConfig_('URL_ADMIN',VOLEI.ADMIN_URL,'Painel administrativo independente');
  definirConfig_('VERSAO',VOLEI.VERSION,'Versão atual do sistema');
@@ -16,12 +17,14 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  definirConfig_('MODALIDADE','VOLEI_DE_QUADRA','Modalidade');
  if(aba_(VOLEI.SHEETS.SORTEIOS).getLastRow()<2)criarEstadoInscricoes_('Sistema configurado. Inscrições abertas.');
  INSTALAR_ACIONADOR_AUTOMATICO();
- const url=ScriptApp.getService().getUrl()||'';
- if(url)definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');
+ const config=obterConfig_();
+ const detectada=ScriptApp.getService().getUrl()||'';
+ const urlPublica=/\/exec(?:\?|$)/.test(detectada)?detectada:texto_(config.API_WEB_APP);
+ if(urlPublica)definirConfig_('API_WEB_APP',urlPublica,'URL pública /exec do Apps Script');
  log_('SISTEMA_CONFIGURADO','','EDITOR','ADMIN','Backend '+VOLEI.VERSION+' configurado.','INFO','SISTEMA');
- Logger.log('ADMIN_KEY: '+p.getProperty('ADMIN_KEY'));
- Logger.log('WEB_APP_URL: '+url);
- return{ok:true,adminKey:p.getProperty('ADMIN_KEY'),webAppUrl:url,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
+ Logger.log('ADMIN_KEY gravada em CONFIG: '+adminKey);
+ Logger.log('WEB_APP_URL: '+urlPublica);
+ return{ok:true,adminKey,webAppUrl:urlPublica,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
 }
 function INSTALAR_SISTEMA_COMPLETO(){return CONFIGURAR_SISTEMA_INICIAL();}
-function REGISTRAR_URL_WEB_APP(){const url=ScriptApp.getService().getUrl()||'';if(!url)throw Error('Implante primeiro como Aplicativo da Web.');definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');Logger.log('WEB_APP_URL: '+url);return{ok:true,webAppUrl:url};}
+function REGISTRAR_URL_WEB_APP(){const config=obterConfig_(),detectada=ScriptApp.getService().getUrl()||'',url=/\/exec(?:\?|$)/.test(detectada)?detectada:texto_(config.API_WEB_APP);if(!url)throw Error('Informe primeiro uma URL pública terminada em /exec na aba CONFIG.');definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');Logger.log('WEB_APP_URL: '+url);return{ok:true,webAppUrl:url};}
