@@ -4,6 +4,8 @@
   const B = window.VoleiBase;
   if (!B) return;
 
+  const THIRD_PLACE_PHASE = 'DISPUTA DE 3º LUGAR';
+
   function balanceTeams(players) {
     const active = players.filter(player => String(player.active || 'SIM').toUpperCase() === 'SIM');
     const adults = active
@@ -81,14 +83,40 @@
     return null;
   }
 
+  function loserTeam(match) {
+    if (!match?.winnerId || !match?.team1 || !match?.team2) return null;
+    if (match.team1.id === match.winnerId) return match.team2;
+    if (match.team2.id === match.winnerId) return match.team1;
+    return null;
+  }
+
+  function allMatches(rounds) {
+    return rounds.flatMap(round => round.matches);
+  }
+
   function advanceWinner(rounds, match) {
     if (!match.nextGame || !match.winnerId) return;
-    const next = rounds.flatMap(round => round.matches)
+    const next = allMatches(rounds)
       .find(item => Number(item.game) === Number(match.nextGame));
     const team = winnerTeam(match);
     if (!next || !team) return;
     if (Number(match.nextSlot) === 1) next.team1 = team;
     else next.team2 = team;
+  }
+
+  function advanceLoserToThird(rounds, match) {
+    if (String(match?.phase || '').toUpperCase() !== 'SEMIFINAL') return;
+    const thirdPlace = allMatches(rounds)
+      .find(item => String(item.phase || '').toUpperCase() === THIRD_PLACE_PHASE);
+    const loser = loserTeam(match);
+    if (!thirdPlace || !loser) return;
+
+    const semifinals = allMatches(rounds)
+      .filter(item => String(item.phase || '').toUpperCase() === 'SEMIFINAL')
+      .sort((a, b) => Number(a.game) - Number(b.game));
+    const semifinalIndex = semifinals.findIndex(item => Number(item.game) === Number(match.game));
+    if (semifinalIndex === 0) thirdPlace.team1 = loser;
+    if (semifinalIndex === 1) thirdPlace.team2 = loser;
   }
 
   function buildBracket(teams, seed) {
@@ -146,9 +174,31 @@
       });
     }
 
-    const firstPlayable = rounds.flatMap(round => round.matches)
+    if (shuffled.length >= 4 && totalRounds >= 2) {
+      const semifinals = rounds[totalRounds - 2].matches;
+      const finalRound = rounds[totalRounds - 1];
+      finalRound.name = 'FINAIS';
+      finalRound.matches.push(B.normalizeMatch({
+        game: game++,
+        roundIndex: totalRounds - 1,
+        phase: THIRD_PLACE_PHASE,
+        team1: null,
+        team2: null,
+        team1Placeholder: `Perdedor Jogo ${semifinals[0].game}`,
+        team2Placeholder: `Perdedor Jogo ${semifinals[1].game}`,
+        winnerId: '',
+        status: 'AGUARDANDO',
+        nextGame: 0,
+        nextSlot: 0
+      }));
+    }
+
+    const firstPlayable = allMatches(rounds)
       .find(match => match.team1 && match.team2 && match.status === 'AGUARDANDO');
-    if (firstPlayable) firstPlayable.availableAt = new Date().toISOString();
+    if (firstPlayable) {
+      firstPlayable.availableAt = new Date().toISOString();
+      firstPlayable.status = 'LIBERADO';
+    }
     return rounds;
   }
 
@@ -159,12 +209,24 @@
     state.teams = teams;
     state.rounds = buildBracket(teams, seed);
     state.status = 'SORTEADO';
-    state.message = 'Equipes sorteadas e chaveamento disponível.';
+    state.message = teams.length >= 4
+      ? 'Equipes sorteadas. Haverá final e disputa de 3º lugar.'
+      : 'Equipes sorteadas e chaveamento disponível.';
     state.auditHash = hash32(JSON.stringify({ teams, rounds: state.rounds, seed }))
       .toString(16).toUpperCase();
     B.saveState(state);
     return { message: 'Sorteio realizado.', state };
   }
 
-  window.VoleiTournament = { balanceTeams, hash32, winnerTeam, advanceWinner, buildBracket, runDraw };
+  window.VoleiTournament = {
+    THIRD_PLACE_PHASE,
+    balanceTeams,
+    hash32,
+    winnerTeam,
+    loserTeam,
+    advanceWinner,
+    advanceLoserToThird,
+    buildBracket,
+    runDraw
+  };
 })();
