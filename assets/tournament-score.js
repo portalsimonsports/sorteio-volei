@@ -69,10 +69,17 @@
     };
   }
 
+  function matchPriority(match) {
+    const phase = String(match.phase || '').toUpperCase();
+    if (phase === T.THIRD_PLACE_PHASE) return -2;
+    if (phase === 'FINAL') return -1;
+    return Number(match.game);
+  }
+
   function registerScore(params) {
     const state = B.readState();
-    const match = state.rounds.flatMap(round => round.matches)
-      .find(item => Number(item.game) === Number(params.jogo ?? params.game));
+    const all = state.rounds.flatMap(round => round.matches);
+    const match = all.find(item => Number(item.game) === Number(params.jogo ?? params.game));
 
     if (!match) throw new Error('Jogo não encontrado.');
     if (!match.team1 || !match.team2) throw new Error('As duas equipes ainda não estão definidas.');
@@ -91,11 +98,12 @@
     match.status = 'FINALIZADO';
     match.finishedAt = new Date().toISOString();
     T.advanceWinner(state.rounds, match);
+    T.advanceLoserToThird(state.rounds, match);
 
-    const next = state.rounds.flatMap(round => round.matches)
+    const next = all
       .filter(item => Number(item.game) !== Number(match.game))
-      .sort((a, b) => Number(a.game) - Number(b.game))
-      .find(item => item.team1 && item.team2 && item.status === 'AGUARDANDO' && !item.availableAt);
+      .filter(item => item.team1 && item.team2 && item.status === 'AGUARDANDO' && !item.availableAt)
+      .sort((a, b) => matchPriority(a) - matchPriority(b))[0];
 
     if (next) {
       next.availableAt = new Date(
@@ -103,15 +111,25 @@
       ).toISOString();
     }
 
-    const final = state.rounds.at(-1)?.matches?.[0];
-    if (final?.status === 'FINALIZADO') {
+    const final = all.find(item => String(item.phase || '').toUpperCase() === 'FINAL');
+    const thirdPlace = all.find(item => String(item.phase || '').toUpperCase() === T.THIRD_PLACE_PHASE);
+    const competitionFinished = final?.status === 'FINALIZADO' && (!thirdPlace || thirdPlace.status === 'FINALIZADO');
+
+    if (competitionFinished) {
       state.status = 'ENCERRADO';
-      state.message = 'Competição encerrada.';
+      state.message = thirdPlace
+        ? 'Competição encerrada. Campeão e terceiro lugar definidos.'
+        : 'Competição encerrada.';
+    } else {
+      state.status = 'EM_ANDAMENTO';
+      state.message = 'Competição em andamento.';
     }
 
     B.saveState(state);
     return {
-      message: `Placar registrado. Próxima partida liberada em ${C.MATCH_INTERVAL_MINUTES || 10} minutos.`,
+      message: competitionFinished
+        ? 'Placar registrado. Competição encerrada.'
+        : `Placar registrado. Próxima partida liberada em ${C.MATCH_INTERVAL_MINUTES || 10} minutos.`,
       state
     };
   }
