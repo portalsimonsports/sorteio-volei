@@ -7,9 +7,9 @@
   if (!B || !T || !S) return;
 
   const C = B.C || {};
-  const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v5';
+  const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v6';
   const ADMIN_ACTIONS = new Set([
-    'admin', 'salvarJogador', 'excluirJogador', 'sortearAgora',
+    'admin', 'salvarJogador', 'excluirJogador', 'sortearAgora', 'iniciarContagem',
     'gerarCodigo', 'cancelar', 'registrarResultado', 'resetar',
     'limparTudo', 'diagnostico'
   ]);
@@ -33,6 +33,18 @@
         state.status = 'INSCRICOES';
         B.saveState(state);
         return Promise.resolve({ message: 'Participante excluído.', state });
+      }
+
+      if (action === 'iniciarContagem') {
+        const state = B.readState();
+        const seconds = Number(params.segundos || 600);
+        state.status = 'EM_CONTAGEM';
+        state.message = 'Sorteio iniciado. Acompanhe a contagem regressiva.';
+        state.inicioPrevisto = new Date(Date.now() + seconds * 1000).toISOString();
+        state.rules = { ...(state.rules || {}), countdownSeconds: seconds };
+        B.saveState(state);
+        setTimeout(() => T.runDraw(), seconds * 1000);
+        return Promise.resolve({ message: 'Contagem regressiva iniciada.', state });
       }
 
       if (action === 'sortearAgora') return Promise.resolve(T.runDraw());
@@ -62,7 +74,7 @@
     if (forceNew) localStorage.removeItem(ADMIN_KEY_STORE);
     let key = localStorage.getItem(ADMIN_KEY_STORE) || '';
     if (!key) {
-      key = String(prompt('Informe a chave administrativa gerada pelo Apps Script:') || '').trim();
+      key = String(prompt('Informe a chave administrativa gravada na aba CONFIG:') || '').trim();
       if (!key) throw new Error('Chave administrativa não informada.');
       localStorage.setItem(ADMIN_KEY_STORE, key);
     }
