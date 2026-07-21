@@ -59,7 +59,7 @@
     rounds.flatMap(round => round.matches).forEach(match => {
       V.match(match);
       if (!match.team1 || !match.team2 || ['BYE', 'VAZIO', 'FINALIZADO'].includes(match.status)) return;
-      const option = el('option', '', `Jogo ${match.game} — ${matchName(match)}`);
+      const option = el('option', '', `Jogo ${match.game} — ${match.phase || ''} — ${matchName(match)}`);
       option.value = String(match.game);
       const available = match.availableAt ? V.date(match.availableAt) : null;
       option.disabled = !match.availableAt || Boolean(available && available.getTime() > Date.now());
@@ -72,6 +72,25 @@
     fillScore(selectedMatch());
   }
 
+  function appendPodium(rounds) {
+    const matches = rounds.flatMap(round => round.matches);
+    const final = matches.find(match => String(match.phase || '').toUpperCase() === 'FINAL');
+    const third = matches.find(match => String(match.phase || '').toUpperCase() === 'DISPUTA DE 3º LUGAR');
+    const champion = V.winner(final || {});
+    const thirdPlace = V.winner(third || {});
+
+    if (champion) {
+      const box = el('div', 'champion');
+      box.append(el('span', '', 'Equipe campeã'), el('strong', '', V.teamName(champion)));
+      A.ui.matchesAdmin.appendChild(box);
+    }
+    if (thirdPlace) {
+      const box = el('div', 'champion');
+      box.append(el('span', '', '3º lugar'), el('strong', '', V.teamName(thirdPlace)));
+      A.ui.matchesAdmin.appendChild(box);
+    }
+  }
+
   function renderHistory(rounds) {
     A.ui.matchesAdmin.replaceChildren();
     if (!rounds.length) {
@@ -79,13 +98,7 @@
       return;
     }
 
-    const final = rounds.at(-1)?.matches?.[0];
-    const champion = V.winner(final || {});
-    if (champion) {
-      const box = el('div', 'champion');
-      box.append(el('span', '', 'Equipe campeã'), el('strong', '', V.teamName(champion)));
-      A.ui.matchesAdmin.appendChild(box);
-    }
+    appendPodium(rounds);
 
     rounds.forEach(round => {
       const section = el('section');
