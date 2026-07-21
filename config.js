@@ -3,7 +3,7 @@ window.VOLEI_CONFIG = Object.freeze({
   API_BASE: '',
   SHEET_ID: '1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',
   SHEET_URL: 'https://docs.google.com/spreadsheets/d/1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo/edit',
-  DEMO_MODE: true,
+  DEMO_MODE: false,
   POLL_INTERVAL_MS: 5000,
   BEST_OF_SETS: 3,
   SETS_TO_WIN: 2,
