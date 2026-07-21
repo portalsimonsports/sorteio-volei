@@ -1,0 +1,130 @@
+(() => {
+  'use strict';
+  if (document.body?.dataset.page !== 'admin' || !window.Volei) return;
+
+  const V = window.Volei;
+  const C = V.C;
+  const ui = {};
+  let state = V.read();
+  const ids = [
+    'adminMode','adminStatus','drawNow','resetDraw','clearAll','refreshAdmin',
+    'playerForm','playerId','playerName','playerBirth','playerScore','playerActive',
+    'categoryPreview','playersTableBody','teamsPreview','matchesAdmin','sheetLink'
+  ];
+  ids.forEach(id => ui[id] = document.getElementById(id));
+
+  function element(tag, className, text) {
+    const item = document.createElement(tag);
+    if (className) item.className = className;
+    if (text !== undefined) item.textContent = text;
+    return item;
+  }
+
+  function busy(button, enabled, text = 'Processando...') {
+    if (!button) return;
+    if (enabled) {
+      button.dataset.original = button.textContent;
+      button.textContent = text;
+      button.disabled = true;
+    } else {
+      button.textContent = button.dataset.original || button.textContent;
+      button.disabled = false;
+    }
+  }
+
+  function preview() {
+    const playerAge = V.age(ui.playerBirth.value);
+    const score = V.num(ui.playerScore.value);
+    if (playerAge < 0) {
+      ui.categoryPreview.textContent = 'Informe a data de nascimento e a nota. Categoria automática.';
+      return;
+    }
+    const category = V.category(playerAge);
+    const warning = category.pot === 'A' && score < 5 ? ' Nota mínima 5 para adultos.' : '';
+    ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label} • Nota ${V.fmt(score)} • Índice ${V.fmt(V.index(score))}.${warning}`;
+  }
+
+  function addCell(row, text) {
+    row.appendChild(element('td', '', text));
+  }
+
+  function renderPlayers(players) {
+    ui.playersTableBody.replaceChildren();
+    if (!players.length) {
+      const row = element('tr');
+      const cell = element('td', '', 'Nenhum participante cadastrado.');
+      cell.colSpan = 8;
+      row.appendChild(cell);
+      ui.playersTableBody.appendChild(row);
+      return;
+    }
+
+    players.forEach(player => {
+      const row = element('tr');
+      addCell(row, player.id);
+      addCell(row, player.name);
+      addCell(row, player.age);
+      addCell(row, player.pot === 'A' ? 'Adulto' : 'Criança');
+      addCell(row, V.fmt(player.score));
+      addCell(row, V.fmt(player.adjustedScore));
+      addCell(row, player.active);
+
+      const actionsCell = element('td');
+      const actions = element('div', 'actions');
+      const edit = element('button', 'action edit', 'Editar');
+      edit.type = 'button';
+      edit.dataset.action = 'edit';
+      edit.dataset.id = player.id;
+      const remove = element('button', 'action delete', 'Excluir');
+      remove.type = 'button';
+      remove.dataset.action = 'delete';
+      remove.dataset.id = player.id;
+      actions.append(edit, remove);
+      actionsCell.appendChild(actions);
+      row.appendChild(actionsCell);
+      ui.playersTableBody.appendChild(row);
+    });
+  }
+
+  function renderTeams(teams) {
+    ui.teamsPreview.replaceChildren();
+    if (!teams.length) {
+      const card = element('article', 'team card');
+      card.appendChild(element('div', 'empty', 'Equipes ainda não sorteadas.'));
+      ui.teamsPreview.appendChild(card);
+      return;
+    }
+
+    teams.forEach((team, index) => {
+      const card = element('article', 'team card');
+      const head = element('div', 'team-head');
+      head.append(element('span', '', `EQUIPE ${String(index + 1).padStart(2, '0')}`));
+      head.append(element('strong', '', `Índice ${V.fmt(team.totalIndex)}`));
+      const members = element('div', 'team-members');
+      [[team.adult, team.adultIndex], [team.child, team.childIndex]].forEach(member => {
+        const row = element('div', 'team-member');
+        row.append(element('span', '', member[0]), element('span', '', V.fmt(member[1])));
+        members.appendChild(row);
+      });
+      card.append(head, members);
+      ui.teamsPreview.appendChild(card);
+    });
+  }
+
+  function render(next) {
+    state = next;
+    ui.adminMode.textContent = C.DEMO_MODE || !C.API_BASE
+      ? 'Modo local do navegador'
+      : 'Sincronizado com Google Sheets';
+    ui.adminStatus.textContent = next.status;
+    renderPlayers(next.players);
+    renderTeams(next.teams);
+    window.VoleiAdmin.renderMatches(next.rounds);
+  }
+
+  window.VoleiAdmin = {
+    V, C, ui, element, busy, preview, render,
+    renderMatches: () => {},
+    getState: () => state
+  };
+})();
