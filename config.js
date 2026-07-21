@@ -1,6 +1,6 @@
 window.VOLEI_CONFIG = Object.freeze({
   APP_NAME: 'Sorteio de Duplas de Vôlei',
-  API_BASE: '',
+  API_BASE: 'https://script.google.com/macros/s/AKfycbwxiWDeoeSz-pbI2W8f1AlGKFhS9Xn6A4_Svt5s66wQPdv4khfJeBQWT9WF13sEqt6c/exec',
   SHEET_ID: '1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',
   SHEET_URL: 'https://docs.google.com/spreadsheets/d/1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo/edit',
   DEMO_MODE: false,
