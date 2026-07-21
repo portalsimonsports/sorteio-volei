@@ -15,8 +15,12 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  definirConfig_('FORMATO_PARTIDA','MELHOR_DE_3','Formato da partida');
  definirConfig_('MODALIDADE','VOLEI_DE_QUADRA','Modalidade');
  if(aba_(VOLEI.SHEETS.SORTEIOS).getLastRow()<2)criarEstadoInscricoes_('Sistema configurado. Inscrições abertas.');
+ INSTALAR_ACIONADOR_AUTOMATICO();
+ const url=ScriptApp.getService().getUrl()||'';
+ if(url)definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');
  log_('SISTEMA_CONFIGURADO','','EDITOR','ADMIN','Backend '+VOLEI.VERSION+' configurado.','INFO','SISTEMA');
  Logger.log('ADMIN_KEY: '+p.getProperty('ADMIN_KEY'));
- return{ok:true,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
+ Logger.log('WEB_APP_URL: '+url);
+ return{ok:true,adminKey:p.getProperty('ADMIN_KEY'),webAppUrl:url,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
 }
 function INSTALAR_SISTEMA_COMPLETO(){return CONFIGURAR_SISTEMA_INICIAL();}
