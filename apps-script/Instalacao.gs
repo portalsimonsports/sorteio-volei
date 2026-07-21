@@ -8,6 +8,10 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  definirConfig_('URL_SITE',VOLEI.SITE_URL,'Página pública independente');
  definirConfig_('URL_ADMIN',VOLEI.ADMIN_URL,'Painel administrativo independente');
  definirConfig_('VERSAO',VOLEI.VERSION,'Versão atual do sistema');
+ definirConfig_('DURACAO_CONTAGEM_SEGUNDOS',600,'Duração da contagem regressiva pública');
+ definirConfig_('PUBLICAR_PESOS','NAO','Não exibir notas, índices ou pesos na página pública');
+ definirConfig_('EXIBIR_IDADE_PUBLICO','SIM','Exibir somente nome e idade dos participantes');
+ definirConfig_('DISPUTA_TERCEIRO_LUGAR','ATIVA','Perdedores das semifinais disputam o terceiro lugar');
  definirConfig_('INTERVALO_ENTRE_PARTIDAS_MINUTOS',10,'Intervalo obrigatório entre partidas');
  definirConfig_('PONTOS_SET_NORMAL',25,'Pontuação-alvo do 1º e do 2º sets');
  definirConfig_('PONTOS_SET_DESEMPATE',15,'Pontuação-alvo do 3º set');
