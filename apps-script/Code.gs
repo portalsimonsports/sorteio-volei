@@ -1,6 +1,6 @@
 /** SORTEIO DE DUPLAS DE VÔLEI — V006 */
 const VOLEI=Object.freeze({
- VERSION:'V006_TERCEIRO_LUGAR_VOLEI_QUADRA_2026-07-21',
+ VERSION:'V006_TERCEIRO_LUGAR_CONTAGEM_PUBLICA_2026-07-21',
  SPREADSHEET_ID:'1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',TIMEZONE:'America/Sao_Paulo',
  SITE_URL:'https://portalsimonsports.github.io/sorteio-volei/',ADMIN_URL:'https://portalsimonsports.github.io/sorteio-volei/admin.html',
  SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS'}),
@@ -19,6 +19,7 @@ function executarApi_(p){try{const a=texto_(p.acao||'estado');let d;switch(a){
  case'estado':d=obterEstadoPublico_();break;case'admin':exigirAdmin_(p.chave);d=obterEstadoAdmin_();break;
  case'inscrever':d=inscreverParticipante_(p);break;case'salvarJogador':exigirAdmin_(p.chave);d=salvarParticipante_(p,true);break;
  case'excluirJogador':exigirAdmin_(p.chave);d=excluirParticipante_(p.id);break;case'sortearAgora':exigirAdmin_(p.chave);d=realizarSorteioAgora_('PAINEL_WEB');break;
+ case'iniciarContagem':exigirAdmin_(p.chave);d=iniciarContagemDireta_(p.segundos);break;
  case'gerarCodigo':exigirAdmin_(p.chave);d=gerarCodigoAtivacao_();break;case'ativar':d=ativarSorteio_(p.codigo,p.origem||'SITE');break;
  case'cancelar':exigirAdmin_(p.chave);d=cancelarSorteio_('PAINEL_WEB');break;case'registrarResultado':exigirAdmin_(p.chave);d=registrarResultado_(p.jogo,p.vencedorId||p.payload);break;
  case'resetar':exigirAdmin_(p.chave);d=resetarSorteio_();break;case'limparTudo':exigirAdmin_(p.chave);d=limparTudo_();break;
