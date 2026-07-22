@@ -31,6 +31,8 @@
       idade: playerAge,
       dataNascimento: V.syntheticBirthDate(playerAge),
       nota: ui.playerScore.value,
+      notaAnterior: ui.playerScore.dataset.originalScore || '',
+      indiceAnterior: ui.playerScore.dataset.originalAdjusted || '',
       ativo: ui.playerActive.value
     };
     try {
@@ -48,6 +50,8 @@
       ui.playerForm.reset();
       ui.playerId.value = '';
       ui.playerActive.value = 'SIM';
+      delete ui.playerScore.dataset.originalScore;
+      delete ui.playerScore.dataset.originalAdjusted;
       A.preview();
       await refresh();
     } catch (error) {
@@ -70,7 +74,9 @@
       ui.playerId.value = player.id;
       ui.playerName.value = player.name;
       ui.playerAge.value = player.age;
-      ui.playerScore.value = player.score;
+      ui.playerScore.value = V.ratingEditValue ? V.ratingEditValue(player) : player.score;
+      ui.playerScore.dataset.originalScore = String(player.score);
+      ui.playerScore.dataset.originalAdjusted = String(player.adjustedScore);
       ui.playerActive.value = player.active || 'SIM';
       A.preview();
       ui.playerName.focus();
