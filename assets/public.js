@@ -6,13 +6,16 @@
   const C = V.C;
   const ui = {};
   const THIRD_PLACE_PHASE = 'DISPUTA DE 3º LUGAR';
-  const EVENT_TIMEZONE = C.EVENT_TIMEZONE || 'America/Sao_Paulo';
-  const EVENT_DATE = String(C.EVENT_DATE || '2026-07-22');
-  const REGISTRATION_CLOSE_TIME = String(C.REGISTRATION_CLOSE_TIME || '09:50');
-  const COUNTDOWN_START_TIME = String(C.COUNTDOWN_START_TIME || '09:55');
-  const FIRST_MATCH_TIME = String(C.FIRST_MATCH_TIME || '10:15');
+  let schedule = {
+    timezone: C.EVENT_TIMEZONE || 'America/Sao_Paulo',
+    eventDate: String(C.EVENT_DATE || '2026-07-22'),
+    registrationCloseTime: String(C.REGISTRATION_CLOSE_TIME || '09:50'),
+    countdownStartTime: String(C.COUNTDOWN_START_TIME || '09:55'),
+    firstMatchTime: String(C.FIRST_MATCH_TIME || '10:15')
+  };
   let current = null;
   let countdownTimer = null;
+  let countdownTargetMs = 0;
   let liveTimer = null;
   let weatherTimer = null;
 
@@ -24,12 +27,38 @@
     'countdownStage','countdownClock','countdownMessage','countdownProgress',
     'placementSummary','championName','thirdPlaceName',
     'liveTime','liveDate','weatherIcon','weatherTemperature','weatherCondition','weatherWind',
-    'firstMatchCountdown','firstMatchTarget'
+    'firstMatchCountdown','firstMatchTarget','firstMatchLabel','registrationDescription',
+    'registrationChip','countdownChip','firstMatchChip'
   ].forEach(id => ui[id] = document.getElementById(id));
 
   function connection(mode, text) {
     ui.connectionDot.className = `status-dot ${mode}`;
     ui.connectionText.textContent = text;
+  }
+
+  function normalizeEventDate(value) {
+    const text = String(value || '').trim();
+    let match = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (match) return text;
+    match = text.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    return match ? `${match[3]}-${match[2]}-${match[1]}` : String(C.EVENT_DATE || '2026-07-22');
+  }
+
+  function applySchedule(state) {
+    const source = state?.schedule || {};
+    schedule = {
+      timezone: String(source.timezone || C.EVENT_TIMEZONE || 'America/Sao_Paulo'),
+      eventDate: normalizeEventDate(source.eventDate || C.EVENT_DATE),
+      registrationCloseTime: String(source.registrationCloseTime || C.REGISTRATION_CLOSE_TIME || '09:50'),
+      countdownStartTime: String(source.countdownStartTime || C.COUNTDOWN_START_TIME || '09:55'),
+      firstMatchTime: String(source.firstMatchTime || C.FIRST_MATCH_TIME || '10:15')
+    };
+
+    if (ui.firstMatchLabel) ui.firstMatchLabel.textContent = `Primeira partida • ${schedule.firstMatchTime}`;
+    if (ui.registrationDescription) ui.registrationDescription.textContent = `Inscrições disponíveis até ${schedule.registrationCloseTime}. A categoria é definida automaticamente pela idade.`;
+    if (ui.registrationChip) ui.registrationChip.textContent = `Inscrições até ${schedule.registrationCloseTime}`;
+    if (ui.countdownChip) ui.countdownChip.textContent = `Contagem às ${schedule.countdownStartTime}`;
+    if (ui.firstMatchChip) ui.firstMatchChip.textContent = `Primeira partida às ${schedule.firstMatchTime}`;
   }
 
   function players(target, list) {
@@ -142,7 +171,7 @@
 
   function zonedParts(date = new Date()) {
     const parts = new Intl.DateTimeFormat('en-CA', {
-      timeZone: EVENT_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit',
+      timeZone: schedule.timezone, year: 'numeric', month: '2-digit', day: '2-digit',
       hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
     }).formatToParts(date);
     return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
@@ -156,57 +185,64 @@
   }
 
   function eventMoment(time) {
-    const [year, month, day] = EVENT_DATE.split('-').map(Number);
+    const [year, month, day] = normalizeEventDate(schedule.eventDate).split('-').map(Number);
     const [hour, minute] = String(time).split(':').map(Number);
     return zonedDate(year, month, day, hour, minute);
   }
 
   function registrationIsOpen(state, now = new Date()) {
     if (typeof state?.registrationOpen === 'boolean') return state.registrationOpen;
-    const blockedStatus = ['EM_CONTAGEM','SORTEADO','EM_ANDAMENTO','FINALIZADO','ENCERRADO'].includes(String(state?.status || '').toUpperCase());
-    return !blockedStatus && now.getTime() < eventMoment(REGISTRATION_CLOSE_TIME).getTime();
+    return now.getTime() < eventMoment(schedule.registrationCloseTime).getTime();
   }
 
   function stopCountdown() {
     if (countdownTimer) clearInterval(countdownTimer);
     countdownTimer = null;
+    countdownTargetMs = 0;
     ui.countdownStage.hidden = true;
     document.body.classList.remove('countdown-active');
   }
 
   function startCountdown(target, totalSeconds) {
+    const targetMs = target.getTime();
     ui.countdownStage.hidden = false;
     document.body.classList.add('countdown-active');
     ui.countdownMessage.textContent = 'Preparando as duplas, o chaveamento, a final e a disputa de terceiro lugar.';
     const total = Math.max(1, Number(totalSeconds || C.COUNTDOWN_SECONDS || 1200));
     const update = () => {
-      const remaining = Math.max(0, Math.ceil((target.getTime() - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.ceil((targetMs - Date.now()) / 1000));
       const minutes = String(Math.floor(remaining / 60)).padStart(2, '0');
       const seconds = String(remaining % 60).padStart(2, '0');
       ui.countdownClock.textContent = `${minutes}:${seconds}`;
       ui.countdownProgress.style.width = `${Math.max(0, Math.min(100, ((total - remaining) / total) * 100))}%`;
-      if (remaining <= 0) { clearInterval(countdownTimer); countdownTimer = null; ui.countdownMessage.textContent = 'Primeira partida iniciada.'; setTimeout(refresh, 1200); }
+      if (remaining <= 0) { clearInterval(countdownTimer); countdownTimer = null; countdownTargetMs = 0; ui.countdownMessage.textContent = 'Primeira partida iniciada.'; setTimeout(refresh, 1200); }
     };
+    if (countdownTimer && countdownTargetMs === targetMs) { update(); return; }
     if (countdownTimer) clearInterval(countdownTimer);
+    countdownTargetMs = targetMs;
     update();
     countdownTimer = setInterval(update, 1000);
   }
 
   function updateLiveInformation() {
     const now = new Date();
-    ui.liveTime.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: EVENT_TIMEZONE, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now);
-    ui.liveDate.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: EVENT_TIMEZONE, weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(now);
-    const target = eventMoment(FIRST_MATCH_TIME);
+    ui.liveTime.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: schedule.timezone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(now);
+    ui.liveDate.textContent = new Intl.DateTimeFormat('pt-BR', { timeZone: schedule.timezone, weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(now);
+    const target = eventMoment(schedule.firstMatchTime);
     const seconds = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
     const days = Math.floor(seconds / 86400), hours = Math.floor((seconds % 86400) / 3600), minutes = Math.floor((seconds % 3600) / 60), secs = seconds % 60;
     ui.firstMatchCountdown.textContent = seconds > 0
       ? `${days ? String(days).padStart(2, '0') + 'd ' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
       : 'INICIADA';
-    ui.firstMatchTarget.textContent = `Início: ${new Intl.DateTimeFormat('pt-BR', { timeZone: EVENT_TIMEZONE, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(target)}`;
+    ui.firstMatchTarget.textContent = `Início: ${new Intl.DateTimeFormat('pt-BR', { timeZone: schedule.timezone, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(target)}`;
 
-    const countdownStart = eventMoment(COUNTDOWN_START_TIME);
-    if (now >= countdownStart && now < target) startCountdown(target, Math.round((target - countdownStart) / 1000));
+    const countdownStart = eventMoment(schedule.countdownStartTime);
+    if (now >= countdownStart && now < target) startCountdown(target, Math.max(1, Math.round((target - countdownStart) / 1000)));
     else if (String(current?.status || '').toUpperCase() !== 'EM_CONTAGEM') stopCountdown();
+
+    const open = registrationIsOpen(current, now);
+    [...ui.signupForm.elements].forEach(element => element.disabled = !open);
+    ui.signupButton.textContent = open ? 'Confirmar inscrição' : 'Inscrições encerradas';
   }
 
   function windDirection(degrees) {
@@ -227,7 +263,7 @@
       const url = new URL('https://api.open-meteo.com/v1/forecast');
       url.searchParams.set('latitude', latitude); url.searchParams.set('longitude', longitude);
       url.searchParams.set('current', 'temperature_2m,weather_code,wind_speed_10m,wind_direction_10m');
-      url.searchParams.set('timezone', EVENT_TIMEZONE);
+      url.searchParams.set('timezone', schedule.timezone);
       const response = await fetch(url, { cache: 'no-store' });
       if (!response.ok) throw new Error('Falha ao consultar o clima.');
       const weather = (await response.json()).current || {};
@@ -252,6 +288,7 @@
 
   function render(state) {
     current = state;
+    applySchedule(state);
     const active = state.players.filter(player => String(player.active || 'SIM').toUpperCase() === 'SIM');
     const adults = active.filter(player => player.pot === 'A').sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
     const children = active.filter(player => player.pot === 'B').sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
@@ -266,14 +303,10 @@
     ui.auditLine.textContent = C.DEMO_MODE || !C.API_BASE ? 'Modo local' : 'Dados sincronizados • Atualização automática';
     connection(C.DEMO_MODE || !C.API_BASE ? 'warn' : 'ok', C.DEMO_MODE || !C.API_BASE ? 'Modo local' : 'Sincronizado');
 
-    const scheduledTarget = eventMoment(FIRST_MATCH_TIME);
+    const scheduledTarget = eventMoment(schedule.firstMatchTime);
     const statusCounting = String(state.status || '').toUpperCase() === 'EM_CONTAGEM';
     if (statusCounting) startCountdown(V.date(state.inicioPrevisto) || scheduledTarget, state.rules?.countdownSeconds || C.COUNTDOWN_SECONDS);
     else updateLiveInformation();
-
-    const open = registrationIsOpen(state);
-    [...ui.signupForm.elements].forEach(element => element.disabled = !open);
-    ui.signupButton.textContent = open ? 'Confirmar inscrição' : 'Inscrições encerradas';
   }
 
   async function refresh() {
@@ -284,7 +317,7 @@
   ui.signupForm.addEventListener('submit', async event => {
     event.preventDefault();
     ui.signupMessage.className = 'message'; ui.signupMessage.textContent = '';
-    if (!registrationIsOpen(current)) { ui.signupMessage.className = 'message error'; ui.signupMessage.textContent = 'As inscrições foram encerradas às 09h50.'; return; }
+    if (!registrationIsOpen(current)) { ui.signupMessage.className = 'message error'; ui.signupMessage.textContent = `As inscrições foram encerradas às ${schedule.registrationCloseTime}.`; return; }
     const old = ui.signupButton.textContent;
     ui.signupButton.disabled = true; ui.signupButton.textContent = 'Inscrevendo...';
     try {
@@ -301,8 +334,9 @@
     } catch (error) {
       ui.signupMessage.className = 'message error'; ui.signupMessage.textContent = error.message;
     } finally {
-      ui.signupButton.disabled = !registrationIsOpen(current);
-      ui.signupButton.textContent = registrationIsOpen(current) ? old : 'Inscrições encerradas';
+      const open = registrationIsOpen(current);
+      ui.signupButton.disabled = !open;
+      ui.signupButton.textContent = open ? old : 'Inscrições encerradas';
     }
   });
 
