@@ -119,12 +119,36 @@
     if (semifinalIndex === 1) thirdPlace.team2 = loser;
   }
 
+  function createInitialSlots(teams, size, seed) {
+    const matchCount = size / 2;
+    const byeCount = size - teams.length;
+    const pairingTypes = shuffle([
+      ...Array(byeCount).fill('BYE'),
+      ...Array(matchCount - byeCount).fill('MATCH')
+    ], `${seed}|TIPOS_DE_CONFRONTO`);
+
+    const slots = [];
+    let teamIndex = 0;
+
+    pairingTypes.forEach((type, matchIndex) => {
+      if (type === 'BYE') {
+        const team = teams[teamIndex++];
+        const teamOnLeft = hash32(`${seed}|LADO_BYE|${matchIndex}`) % 2 === 0;
+        slots.push(teamOnLeft ? team : null, teamOnLeft ? null : team);
+        return;
+      }
+
+      slots.push(teams[teamIndex++] || null, teams[teamIndex++] || null);
+    });
+
+    return slots;
+  }
+
   function buildBracket(teams, seed) {
     const shuffled = shuffle(teams, seed);
     const size = nextPowerOfTwo(shuffled.length);
     const totalRounds = Math.log2(size);
-    const slots = [...shuffled];
-    while (slots.length < size) slots.push(null);
+    const slots = createInitialSlots(shuffled, size, seed);
 
     const rounds = [];
     let game = 1;
@@ -153,8 +177,6 @@
       } else if (!match.team1 && match.team2) {
         match.winnerId = match.team2.id;
         match.status = 'BYE';
-      } else if (!match.team1 && !match.team2) {
-        match.status = 'VAZIO';
       }
     });
 
@@ -169,15 +191,15 @@
 
     for (let roundIndex = 1; roundIndex < rounds.length; roundIndex++) {
       rounds[roundIndex].matches.forEach((match, index) => {
-        match.team1Placeholder = `Vencedor Jogo ${rounds[roundIndex - 1].matches[index * 2].game}`;
-        match.team2Placeholder = `Vencedor Jogo ${rounds[roundIndex - 1].matches[index * 2 + 1].game}`;
+        if (!match.team1) match.team1Placeholder = `Vencedor Jogo ${rounds[roundIndex - 1].matches[index * 2].game}`;
+        if (!match.team2) match.team2Placeholder = `Vencedor Jogo ${rounds[roundIndex - 1].matches[index * 2 + 1].game}`;
       });
     }
 
     if (shuffled.length >= 4 && totalRounds >= 2) {
       const semifinals = rounds[totalRounds - 2].matches;
       const finalRound = rounds[totalRounds - 1];
-      finalRound.name = 'FINAIS';
+      finalRound.name = 'DECISÕES';
       finalRound.matches.push(B.normalizeMatch({
         game: game++,
         roundIndex: totalRounds - 1,
