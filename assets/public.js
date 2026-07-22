@@ -13,7 +13,8 @@
     'countA','countB','countTeams','countAHero','countBHero','countTeamsHero',
     'potAList','potBList','teamsGrid','balanceSummary','bracket',
     'signupForm','signupName','signupBirth','signupScore','signupButton','signupMessage',
-    'countdownStage','countdownClock','countdownMessage','countdownProgress'
+    'countdownStage','countdownClock','countdownMessage','countdownProgress',
+    'placementSummary','championName','thirdPlaceName'
   ].forEach(id => ui[id] = document.getElementById(id));
 
   function connection(mode, text) {
@@ -50,6 +51,8 @@
   }
 
   function status(match) {
+    if (match.status === 'BYE') return 'Classificada diretamente para a próxima fase';
+    if (match.status === 'VAZIO') return 'Confronto não utilizado';
     if (match.status === 'FINALIZADO') return `Finalizada${match.finishedAt ? ' • ' + V.dateTime(match.finishedAt) : ''}`;
     if (!match.team1 || !match.team2) return 'Aguardando definição das equipes';
     if (!match.availableAt) return 'Aguardando a partida anterior';
@@ -59,27 +62,67 @@
       : 'Partida liberada';
   }
 
+  function phaseClass(match) {
+    const phase = String(match.phase || '').toUpperCase();
+    if (phase === 'DISPUTA DE 3º LUGAR') return 'third-place-match';
+    if (phase === 'FINAL') return 'final-match';
+    if (match.status === 'BYE') return 'bye-match';
+    return '';
+  }
+
+  function displayTeam(match, side) {
+    const team = side === 1 ? match.team1 : match.team2;
+    const placeholder = side === 1 ? match.team1Placeholder : match.team2Placeholder;
+    if (team) return V.teamName(team);
+    if (match.status === 'BYE') return 'BYE — classificação direta';
+    return placeholder || 'A definir';
+  }
+
+  function renderPlacements(rounds) {
+    const matches = rounds.flatMap(round => round.matches);
+    const final = matches.find(match => String(match.phase || '').toUpperCase() === 'FINAL');
+    const third = matches.find(match => String(match.phase || '').toUpperCase() === 'DISPUTA DE 3º LUGAR');
+    const champion = final ? V.winner(final) : null;
+    const thirdPlaced = third ? V.winner(third) : null;
+
+    if (!champion && !thirdPlaced) {
+      ui.placementSummary.hidden = true;
+      return;
+    }
+
+    ui.placementSummary.hidden = false;
+    ui.championName.textContent = champion ? V.teamName(champion) : 'A definir';
+    ui.thirdPlaceName.textContent = thirdPlaced ? V.teamName(thirdPlaced) : 'A definir';
+  }
+
   function bracket(rounds) {
     ui.bracket.innerHTML = rounds.length
-      ? rounds.map(round => `
-        <section class="round">
+      ? rounds.map(round => {
+        const decisions = round.matches.some(match => ['FINAL', 'DISPUTA DE 3º LUGAR'].includes(String(match.phase || '').toUpperCase()));
+        return `
+        <section class="round ${decisions ? 'decisions-round' : ''}">
           <h3>${V.esc(round.name)}</h3>
           <div class="matches">
             ${round.matches.map(match => {
               V.match(match);
-              const teamA = V.teamName(match.team1) || match.team1Placeholder || 'A definir';
-              const teamB = V.teamName(match.team2) || match.team2Placeholder || 'A definir';
-              return `<article class="match card">
-                <div class="match-top"><span>Jogo ${V.esc(match.game)}</span><span>${V.esc(match.phase || round.name)}</span></div>
-                <div class="score-head"><span></span><b>1º</b><b>2º</b><b>3º</b><b>Sets</b></div>
+              const teamA = displayTeam(match, 1);
+              const teamB = displayTeam(match, 2);
+              const phase = String(match.phase || round.name).toUpperCase();
+              const phaseLabel = phase === 'DISPUTA DE 3º LUGAR' ? '🥉 DISPUTA DE 3º LUGAR' : phase === 'FINAL' ? '🏆 FINAL' : phase;
+              return `<article class="match card ${phaseClass(match)}">
+                <div class="match-top"><span>Jogo ${V.esc(match.game)}</span><span>${V.esc(phaseLabel)}</span></div>
+                <div class="score-head"><span>Dupla</span><b>1º</b><b>2º</b><b>3º</b><b>Sets</b></div>
                 <div class="score-row ${match.winnerId === match.team1?.id ? 'winner' : ''}"><span>${V.esc(teamA)}</span>${scoreCells(match, 0)}<strong>${match.sets1}</strong></div>
                 <div class="score-row ${match.winnerId === match.team2?.id ? 'winner' : ''}"><span>${V.esc(teamB)}</span>${scoreCells(match, 1)}<strong>${match.sets2}</strong></div>
                 <span class="match-status">${V.esc(status(match))}</span>
               </article>`;
             }).join('')}
           </div>
-        </section>`).join('')
+        </section>`;
+      }).join('')
       : '<article class="match card"><div class="empty">Chaveamento aguardando o sorteio.</div></article>';
+
+    renderPlacements(rounds);
   }
 
   function stopCountdown() {
@@ -155,11 +198,7 @@
 
     const closed = ['EM_CONTAGEM', 'SORTEADO', 'EM_ANDAMENTO', 'FINALIZADO', 'ENCERRADO'].includes(String(state.status || '').toUpperCase());
     [...ui.signupForm.elements].forEach(element => element.disabled = closed);
-    if (closed) {
-      ui.signupButton.textContent = 'Inscrições encerradas';
-    } else {
-      ui.signupButton.textContent = 'Confirmar inscrição';
-    }
+    ui.signupButton.textContent = closed ? 'Inscrições encerradas' : 'Confirmar inscrição';
   }
 
   async function refresh() {
