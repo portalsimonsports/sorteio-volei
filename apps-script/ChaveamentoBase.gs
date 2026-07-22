@@ -5,8 +5,9 @@ function nomeFase_(size,round,total){const restantes=size/Math.pow(2,round+1);if
 function todosJogos_(rounds){const jogos=[];rounds.forEach(r=>r.matches.forEach(m=>jogos.push(m)));return jogos;}
 function atribuirVencedorMemoria_(rounds,match){if(!match.nextGame||!match.winnerId)return;let next=null;todosJogos_(rounds).some(m=>{if(m.game===match.nextGame){next=m;return true;}return false;});if(!next)return;const team=match.team1&&match.team1.id===match.winnerId?match.team1:match.team2;if(match.nextSlot===1)next.team1=team;else next.team2=team;}
 function criarSlotsIniciais_(equipes,size,seed){const quantidadeJogos=size/2,quantidadeByes=size-equipes.length,tipos=[];for(let i=0;i<quantidadeByes;i++)tipos.push('BYE');for(let i=quantidadeByes;i<quantidadeJogos;i++)tipos.push('JOGO');const ordem=embaralharDeterministico_(tipos,seed+'|TIPOS_DE_CONFRONTO'),slots=[];let indiceEquipe=0;ordem.forEach((tipo,indiceJogo)=>{if(tipo==='BYE'){const equipe=equipes[indiceEquipe++],equipeNaEsquerda=parseInt(hash_(seed+'|LADO_BYE|'+indiceJogo).slice(0,8),16)%2===0;slots.push(equipeNaEsquerda?equipe:null,equipeNaEsquerda?null:equipe);return;}slots.push(equipes[indiceEquipe++]||null,equipes[indiceEquipe++]||null);});return slots;}
-function montarChaveamento_(equipes){
- const seed=Utilities.getUuid(),embaralhadas=embaralharDeterministico_(equipes,seed),size=proximaPotenciaDois_(embaralhadas.length),total=Math.log(size)/Math.log(2),slots=criarSlotsIniciais_(embaralhadas,size,seed),rounds=[];let game=1;
+function montarChaveamento_(equipes,seed){
+ seed=texto_(seed)||'CHAVEAMENTO';
+ const size=proximaPotenciaDois_(equipes.length),total=Math.log(size)/Math.log(2),slots=criarSlotsIniciais_(equipes,size,seed),rounds=[];let game=1;
  for(let r=0;r<total;r++){
   const count=size/Math.pow(2,r+1),matches=[];
   for(let i=0;i<count;i++)matches.push({game:game++,roundIndex:r,phase:nomeFase_(size,r,total),team1:null,team2:null,team1Placeholder:'',team2Placeholder:'',scores:[[null,null],[null,null],[null,null]],sets1:0,sets2:0,winnerId:'',status:'AGUARDANDO',finishedAt:'',availableAt:'',nextGame:0,nextSlot:0});
