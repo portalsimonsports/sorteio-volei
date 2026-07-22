@@ -7,103 +7,65 @@
   <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Sorteio de Duplas de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260721-2315">
-  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2315">
-  <link rel="stylesheet" href="assets/event-live.css?v=20260721-2315">
+  <link rel="stylesheet" href="assets/style.css?v=20260721-2330">
+  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2330">
+  <link rel="stylesheet" href="assets/event-live.css?v=20260721-2330">
 </head>
 <body data-page="public">
   <header class="topbar public-topbar">
-    <a class="brand" href="./">
-      <span class="brand-ball">🏐</span>
-      <span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Torneio de duplas</small></span>
-    </a>
-    <nav class="public-nav" aria-label="Navegação principal">
-      <a href="#inscricao">Inscrição</a>
-      <a href="#participantes">Participantes</a>
-      <a href="#chaveamento">Chaveamento</a>
-    </nav>
+    <a class="brand" href="./"><span class="brand-ball">🏐</span><span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Torneio de duplas</small></span></a>
+    <nav class="public-nav" aria-label="Navegação principal"><a href="#inscricao">Inscrição</a><a href="#participantes">Participantes</a><a href="#chaveamento">Chaveamento</a></nav>
     <div class="status"><span id="connectionDot" class="status-dot"></span><span id="connectionText">Carregando...</span></div>
   </header>
 
   <main>
     <section class="hero hero-pro">
-      <div class="hero-glow hero-glow-one"></div>
-      <div class="hero-glow hero-glow-two"></div>
+      <div class="hero-glow hero-glow-one"></div><div class="hero-glow hero-glow-two"></div>
       <div class="hero-content">
         <div class="hero-badge"><span>🏐</span> Torneio de duplas</div>
         <h1 id="eventTitle">Sorteio de Duplas de Vôlei</h1>
         <p id="eventMessage">Inscrições abertas para adultos e crianças.</p>
-        <div class="hero-actions">
-          <a class="btn primary" href="#inscricao">Fazer inscrição</a>
-          <a class="btn ghost" href="#chaveamento">Acompanhar competição</a>
-        </div>
-        <div class="hero-stats" aria-label="Resumo do torneio">
-          <article><strong id="countAHero">0</strong><span>Adultos</span></article>
-          <article><strong id="countBHero">0</strong><span>Crianças</span></article>
-          <article><strong id="countTeamsHero">0</strong><span>Duplas</span></article>
-        </div>
+        <div class="hero-actions"><a class="btn primary" href="#inscricao">Fazer inscrição</a><a class="btn ghost" href="#chaveamento">Acompanhar competição</a></div>
+        <div class="hero-stats" aria-label="Resumo do torneio"><article><strong id="countAHero">0</strong><span>Adultos</span></article><article><strong id="countBHero">0</strong><span>Crianças</span></article><article><strong id="countTeamsHero">0</strong><span>Duplas</span></article></div>
         <div class="audit" id="auditLine">Atualização automática</div>
       </div>
     </section>
 
     <section class="live-event-section" aria-label="Informações ao vivo do evento">
       <div class="live-event-grid">
-        <article class="live-event-card live-clock-card">
-          <span class="live-label">Data e horário em Jatobá/SP</span>
-          <strong id="liveTime">--:--:--</strong>
-          <small id="liveDate">Carregando data local...</small>
-        </article>
-        <article class="live-event-card live-weather-card">
-          <span class="live-label">Clima em Jatobá/SP</span>
-          <div class="weather-line"><span class="weather-icon" id="weatherIcon">🌤️</span><strong id="weatherTemperature">--°C</strong></div>
-          <div class="weather-details"><span id="weatherCondition">Consultando condições atuais...</span><span id="weatherWind">Vento: --</span></div>
-        </article>
-        <article class="live-event-card live-countdown-card">
-          <span class="live-label">Primeira partida • 10h15</span>
-          <strong class="first-match-countdown" id="firstMatchCountdown">--:--:--</strong>
-          <small id="firstMatchTarget">Calculando o início da primeira partida...</small>
-        </article>
+        <article class="live-event-card live-clock-card"><span class="live-label">Data e horário em Jatobá/SP</span><strong id="liveTime">--:--:--</strong><small id="liveDate">Carregando data local...</small></article>
+        <article class="live-event-card live-weather-card"><span class="live-label">Clima em Jatobá/SP</span><div class="weather-line"><span class="weather-icon" id="weatherIcon">🌤️</span><strong id="weatherTemperature">--°C</strong></div><div class="weather-details"><span id="weatherCondition">Consultando condições atuais...</span><span id="weatherWind">Vento: --</span></div></article>
+        <article class="live-event-card live-countdown-card"><span class="live-label">Primeira partida • 10h15</span><strong class="first-match-countdown" id="firstMatchCountdown">--:--:--</strong><small id="firstMatchTarget">Calculando o início da primeira partida...</small></article>
       </div>
     </section>
 
     <section class="countdown-stage" id="countdownStage" hidden aria-live="assertive">
       <div class="countdown-card">
-        <span class="countdown-kicker">Sorteio ao vivo</span>
-        <div class="countdown-ball">🏐</div>
-        <h2>O sorteio começa em</h2>
-        <strong class="countdown-clock" id="countdownClock">10:00</strong>
-        <p id="countdownMessage">Preparando a formação das duplas e o chaveamento.</p>
+        <span class="countdown-kicker">Torneio ao vivo</span><div class="countdown-ball">🏐</div>
+        <h2>A primeira partida começa em</h2><strong class="countdown-clock" id="countdownClock">20:00</strong>
+        <p id="countdownMessage">Preparando as duplas e o chaveamento.</p>
         <div class="countdown-progress"><span id="countdownProgress"></span></div>
-        <small>Esta página será atualizada automaticamente ao final da contagem.</small>
+        <small>Esta página será atualizada automaticamente.</small>
       </div>
     </section>
 
     <section class="section" id="inscricao">
       <div class="panel signup-panel">
-        <div class="section-head">
-          <div><span class="kicker">Inscrição</span><h2>Participe do torneio</h2><p>Informe seus dados. A categoria é definida automaticamente pela idade.</p></div>
-          <span class="panel-icon">✍️</span>
-        </div>
+        <div class="section-head"><div><span class="kicker">Inscrição</span><h2>Participe do torneio</h2><p>Inscrições disponíveis até 09h50. A categoria é definida automaticamente pela idade.</p></div><span class="panel-icon">✍️</span></div>
         <form class="signup-grid" id="signupForm">
-          <label>Nome completo<input id="signupName" maxlength="80" autocomplete="name" required placeholder="Nome do participante"></label>
-          <label>Data de nascimento<input id="signupBirth" type="date" required></label>
+          <label>Nome<input id="signupName" maxlength="50" autocomplete="name" required placeholder="Nome do participante"></label>
+          <label>Idade<input id="signupAge" type="number" min="1" max="100" step="1" required placeholder="Idade em anos"></label>
           <label>Nota técnica<input id="signupScore" type="number" min="0" max="10" step="1" required placeholder="0 a 10"></label>
           <button class="btn primary" id="signupButton" type="submit">Confirmar inscrição</button>
         </form>
-        <div class="info-chips"><span>18 anos ou mais: Adulto</span><span>Menos de 18 anos: Criança</span></div>
+        <div class="info-chips"><span>Inscrições até 09h50</span><span>Contagem às 09h55</span><span>Primeira partida às 10h15</span></div>
         <div class="message" id="signupMessage" aria-live="polite"></div>
       </div>
     </section>
 
     <section class="section compact" id="participantes">
-      <div class="section-head">
-        <div><span class="kicker">Participantes</span><h2>Inscritos por categoria</h2><p>Na página pública são exibidos somente o nome e a idade.</p></div>
-        <div class="kpis"><article><strong id="countA">0</strong><span>Adultos</span></article><article><strong id="countB">0</strong><span>Crianças</span></article><article><strong id="countTeams">0</strong><span>Duplas</span></article></div>
-      </div>
-      <div class="pots">
-        <article class="pot pot-a card"><header><span class="pot-badge">A</span><div><h3>Adultos</h3><small>18 anos ou mais</small></div></header><div class="players" id="potAList"></div></article>
-        <article class="pot pot-b card"><header><span class="pot-badge">B</span><div><h3>Crianças</h3><small>Menos de 18 anos</small></div></header><div class="players" id="potBList"></div></article>
-      </div>
+      <div class="section-head"><div><span class="kicker">Participantes</span><h2>Inscritos por categoria</h2><p>Na página pública são exibidos somente o nome e a idade.</p></div><div class="kpis"><article><strong id="countA">0</strong><span>Adultos</span></article><article><strong id="countB">0</strong><span>Crianças</span></article><article><strong id="countTeams">0</strong><span>Duplas</span></article></div></div>
+      <div class="pots"><article class="pot pot-a card"><header><span class="pot-badge">A</span><div><h3>Adultos</h3><small>18 anos ou mais</small></div></header><div class="players" id="potAList"></div></article><article class="pot pot-b card"><header><span class="pot-badge">B</span><div><h3>Crianças</h3><small>Menos de 18 anos</small></div></header><div class="players" id="potBList"></div></article></div>
     </section>
 
     <section class="section compact" id="regras">
@@ -118,28 +80,22 @@
       </div>
     </section>
 
-    <section class="section compact" id="equipes">
-      <div class="section-head"><div><span class="kicker">Duplas</span><h2>Equipes formadas</h2><p id="balanceSummary">As equipes serão reveladas após a contagem regressiva.</p></div></div>
-      <div class="teams" id="teamsGrid"></div>
-    </section>
+    <section class="section compact" id="equipes"><div class="section-head"><div><span class="kicker">Duplas</span><h2>Equipes formadas</h2><p id="balanceSummary">As equipes serão reveladas após a contagem regressiva.</p></div></div><div class="teams" id="teamsGrid"></div></section>
 
     <section class="section compact" id="chaveamento">
       <div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2><p>Final, disputa de terceiro lugar e resultados atualizados automaticamente.</p></div></div>
-      <div class="placement-summary" id="placementSummary" hidden>
-        <article class="placement-card champion-placement"><span>🏆 Campeã</span><strong id="championName">A definir</strong></article>
-        <article class="placement-card third-placement"><span>🥉 3º lugar</span><strong id="thirdPlaceName">A definir</strong></article>
-      </div>
+      <div class="placement-summary" id="placementSummary" hidden><article class="placement-card champion-placement"><span>🏆 Campeã</span><strong id="championName">A definir</strong></article><article class="placement-card third-placement"><span>🥉 3º lugar</span><strong id="thirdPlaceName">A definir</strong></article></div>
       <div class="bracket-shell"><div class="bracket" id="bracket"></div></div>
     </section>
   </main>
 
   <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Melhor de 3 sets • Final e disputa de 3º lugar</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260721-2315"></script>
-  <script src="assets/core-data.js?v=20260721-2315"></script>
-  <script src="assets/tournament-bracket.js?v=20260721-2315"></script>
-  <script src="assets/tournament-score.js?v=20260721-2315"></script>
-  <script src="assets/tournament-api.js?v=20260721-2315"></script>
-  <script src="assets/public.js?v=20260721-2315"></script>
+  <script src="config.js?v=20260721-2330"></script>
+  <script src="assets/core-data.js?v=20260721-2330"></script>
+  <script src="assets/tournament-bracket.js?v=20260721-2330"></script>
+  <script src="assets/tournament-score.js?v=20260721-2330"></script>
+  <script src="assets/tournament-api.js?v=20260721-2330"></script>
+  <script src="assets/public.js?v=20260721-2330"></script>
 </body>
 </html>
