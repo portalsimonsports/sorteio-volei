@@ -7,7 +7,7 @@
   <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
   <title>Sorteio de Duplas de Vôlei</title>
   <link rel="stylesheet" href="assets/style.css">
-  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2105">
+  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2140">
 </head>
 <body data-page="public">
   <header class="topbar public-topbar">
@@ -103,6 +103,10 @@
 
     <section class="section compact" id="chaveamento">
       <div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2><p>Final, disputa de terceiro lugar e resultados atualizados automaticamente.</p></div></div>
+      <div class="placement-summary" id="placementSummary" hidden>
+        <article class="placement-card champion-placement"><span>🏆 Campeã</span><strong id="championName">A definir</strong></article>
+        <article class="placement-card third-placement"><span>🥉 3º lugar</span><strong id="thirdPlaceName">A definir</strong></article>
+      </div>
       <div class="bracket-shell"><div class="bracket" id="bracket"></div></div>
     </section>
   </main>
