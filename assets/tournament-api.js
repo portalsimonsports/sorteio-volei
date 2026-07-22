@@ -7,13 +7,12 @@
   if (!B || !T || !S) return;
 
   const C = B.C || {};
-  const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v6';
+  const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v10';
   const ADMIN_ACTIONS = new Set([
     'admin', 'salvarJogador', 'excluirJogador', 'sortearAgora', 'iniciarContagem',
     'gerarCodigo', 'cancelar', 'registrarResultado', 'resetar',
     'limparTudo', 'diagnostico'
   ]);
-  const READ_ACTIONS = new Set(['estado', 'admin', 'diagnostico']);
 
   try {
     const informed = new URLSearchParams(location.search).get('chave');
@@ -38,9 +37,9 @@
 
       if (action === 'iniciarContagem') {
         const state = B.readState();
-        const seconds = Number(params.segundos || 600);
+        const seconds = Number(params.segundos || C.COUNTDOWN_SECONDS || 1200);
         state.status = 'EM_CONTAGEM';
-        state.message = 'Sorteio iniciado. Acompanhe a contagem regressiva.';
+        state.message = 'Contagem regressiva iniciada.';
         state.inicioPrevisto = new Date(Date.now() + seconds * 1000).toISOString();
         state.rules = { ...(state.rules || {}), countdownSeconds: seconds };
         B.saveState(state);
@@ -93,7 +92,11 @@
   }
 
   function buildQuery(action, params = {}, retryingKey = false) {
-    const query = new URLSearchParams({ ...params, acao: action, _: Date.now() });
+    const clean = {};
+    Object.entries(params || {}).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) clean[key] = value;
+    });
+    const query = new URLSearchParams({ ...clean, acao: action, _: Date.now() });
     if (ADMIN_ACTIONS.has(action)) query.set('chave', adminKey(retryingKey));
     return query;
   }
@@ -101,9 +104,7 @@
   function decodePayload(text) {
     const source = String(text || '').replace(/^\uFEFF/, '').trim();
     if (!source) throw new Error('O Apps Script respondeu sem conteúdo.');
-    if (source.startsWith('<')) {
-      throw new Error('A implantação exige login ou não está liberada para acesso público.');
-    }
+    if (source.startsWith('<')) throw new Error('A implantação exige login ou não está liberada para acesso público.');
     try {
       return JSON.parse(source);
     } catch (_) {
@@ -128,20 +129,13 @@
   async function fetchRequest(action, params = {}, retryingKey = false) {
     const endpoint = String(C.API_BASE || '').trim();
     if (!endpoint) throw new Error('A URL do Apps Script ainda não foi configurada.');
-
     const query = buildQuery(action, params, retryingKey);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 18000);
-
     try {
       const response = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}${query}`, {
-        method: 'GET',
-        mode: 'cors',
-        credentials: 'omit',
-        cache: 'no-store',
-        redirect: 'follow',
-        referrerPolicy: 'no-referrer',
-        signal: controller.signal
+        method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store',
+        redirect: 'follow', referrerPolicy: 'no-referrer', signal: controller.signal
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const payload = decodePayload(await response.text());
@@ -173,6 +167,7 @@
       const callback = `__voleiJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       query.set('callback', callback);
       const script = document.createElement('script');
+      let finished = false;
       const timer = setTimeout(() => finish(new Error('Tempo esgotado ao consultar o Apps Script.')), 18000);
 
       function cleanup() {
@@ -182,9 +177,10 @@
       }
 
       function finish(error, value) {
+        if (finished) return;
+        finished = true;
         cleanup();
-        if (error) reject(error);
-        else resolve(value);
+        if (error) reject(error); else resolve(value);
       }
 
       window[callback] = async response => {
@@ -203,16 +199,16 @@
   }
 
   async function remoteRequest(action, params = {}) {
+    // Apps Script frequentemente bloqueia fetch por CORS, mas aceita JSONP pelo doGet.
+    // Todas as operações do sistema são suportadas via query string, inclusive gravações.
     try {
-      return await fetchRequest(action, params);
-    } catch (fetchError) {
-      if (!READ_ACTIONS.has(action)) {
-        throw new Error(`Não foi possível concluir a operação no Apps Script: ${fetchError.message}`);
-      }
+      return await jsonpRequest(action, params);
+    } catch (jsonpError) {
       try {
-        return await jsonpRequest(action, params);
-      } catch (jsonpError) {
-        throw new Error('A implantação do Apps Script não está disponível para o site. Edite a implantação e defina “Quem pode acessar: Qualquer pessoa”.');
+        return await fetchRequest(action, params);
+      } catch (fetchError) {
+        const detail = jsonpError?.message || fetchError?.message || 'falha desconhecida';
+        throw new Error(`Não foi possível acessar o Apps Script: ${detail}`);
       }
     }
   }
@@ -238,14 +234,12 @@
     request,
     validateScore: S.validateScore,
     teamName: team => team
-      ? ([team.adult, team.child].filter(Boolean).join(' + ') || team.id || '')
+      ? ([team.member1, team.member2].filter(Boolean).join(' + ') || [team.adult, team.child].filter(Boolean).join(' + ') || team.id || '')
       : '',
     dateTime: value => {
       const date = B.parseDate(value);
       return date
-        ? date.toLocaleString('pt-BR', {
-          day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
-        })
+        ? date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
         : '';
     },
     toast,
