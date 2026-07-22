@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <title>Baixar Code.gs V012</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260722-0840">
+  <title>Baixar Code.gs V013</title>
+  <link rel="stylesheet" href="assets/style.css?v=20260722-1055">
 </head>
 <body>
   <header class="topbar">
@@ -14,13 +14,13 @@
   </header>
   <main class="admin-wrap">
     <section class="admin-hero">
-      <div><span class="kicker">Backend V012</span><h1>Code.gs completo</h1><p>Gera um único arquivo com todas as atualizações atuais do cadastro, sorteio, chaveamento, placares e terceiro lugar.</p></div>
+      <div><span class="kicker">Backend V013</span><h1>Code.gs completo</h1><p>Inclui horários dinâmicos da planilha, duplas com excedentes do mesmo pote, desempate por idade, chaveamento, placares e terceiro lugar.</p></div>
     </section>
     <section class="panel" style="margin-top:18px;text-align:center">
       <h2>Arquivo pronto para o Google Apps Script</h2>
       <p id="statusDownload">Carregando os módulos atualizados...</p>
-      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V012 em TXT</button>
-      <div class="rule-note">No Apps Script, apague todo o conteúdo do Code.gs, cole o conteúdo deste arquivo, salve e publique uma nova versão da implantação.</div>
+      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V013 em TXT</button>
+      <div class="rule-note">No Apps Script, substitua integralmente o Code.gs, salve e publique uma nova versão da implantação.</div>
     </section>
   </main>
   <script>
@@ -40,7 +40,7 @@
           if (!response.ok) throw new Error(`Não foi possível carregar ${file}.`);
           return `/* ===== ${file} ===== */\n${await response.text()}\n`;
         }));
-        content = `/*\nSORTEIO DE DUPLAS DE VÔLEI — APPS SCRIPT V012\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
+        content = `/*\nSORTEIO DE DUPLAS DE VÔLEI — APPS SCRIPT V013\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
         status.textContent = `${files.length} módulos carregados. Arquivo único disponível.`;
         button.disabled = false;
       }
@@ -50,7 +50,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'SORTEIO_VOLEI_CODE_GS_UNICO_V012.txt';
+        link.download = 'SORTEIO_VOLEI_CODE_GS_UNICO_V013.txt';
         document.body.appendChild(link);
         link.click();
         link.remove();
