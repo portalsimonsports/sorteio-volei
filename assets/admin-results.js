@@ -7,6 +7,7 @@
   const el = A.element;
   const scoreGame = document.getElementById('scoreGame');
   const scoreInfo = document.getElementById('scoreGameInfo');
+  const saveScore = document.getElementById('saveScore');
   const scoreIds = ['scoreS1A','scoreS1B','scoreS2A','scoreS2B','scoreS3A','scoreS3B'];
   const scoreInputs = scoreIds.map(id => document.getElementById(id));
   const DRAFT_KEY = 'sorteio_volei_placar_rascunho_v1';
@@ -25,9 +26,25 @@
     return setText || 'Placar ainda não lançado';
   }
 
+  function statusOf(match) {
+    return String(match?.status || 'AGUARDANDO').toUpperCase();
+  }
+
+  function canSelect(match) {
+    if (!match?.team1 || !match?.team2) return false;
+    const status = statusOf(match);
+    if (['BYE', 'VAZIO', 'FINALIZADO'].includes(status)) return false;
+    if (['LIBERADO', 'EM_DISPUTA'].includes(status)) return true;
+    if (!match.availableAt) return false;
+    const date = V.date(match.availableAt);
+    return !date || date.getTime() <= Date.now();
+  }
+
   function availability(match) {
-    if (match.status === 'FINALIZADO') return `Finalizada em ${V.dateTime(match.finishedAt)}`;
+    const status = statusOf(match);
+    if (status === 'FINALIZADO') return `Finalizada em ${V.dateTime(match.finishedAt)}`;
     if (!match.team1 || !match.team2) return 'Aguardando definição das equipes';
+    if (['LIBERADO', 'EM_DISPUTA'].includes(status)) return 'Partida liberada para lançamento do placar';
     if (!match.availableAt) return 'Aguardando a partida anterior';
     const date = V.date(match.availableAt);
     if (date && date.getTime() > Date.now()) {
@@ -59,6 +76,7 @@
   function fillScore(match, force = false) {
     if (!force && dirty && match && String(match.game) === String(scoreGame.value)) {
       scoreInfo.textContent = `${matchName(match)} — ${availability(match)} — placar digitado preservado`;
+      saveScore.disabled = !canSelect(match);
       return;
     }
 
@@ -71,6 +89,7 @@
     scoreInputs.forEach((input, index) => input.value = values?.[index] ?? '');
     dirty = Boolean(draft && draft.some(value => value !== ''));
     scoreInfo.textContent = match ? `${matchName(match)} — ${availability(match)}` : 'Nenhuma partida selecionada.';
+    saveScore.disabled = !match || !canSelect(match);
   }
 
   function selectedMatch() {
@@ -85,19 +104,26 @@
     first.value = '';
     scoreGame.appendChild(first);
 
-    rounds.flatMap(round => round.matches).forEach(match => {
+    const candidates = rounds.flatMap(round => round.matches).filter(match => {
       V.match(match);
-      if (!match.team1 || !match.team2 || ['BYE', 'VAZIO', 'FINALIZADO'].includes(match.status)) return;
-      const option = el('option', '', `Jogo ${match.game} — ${match.phase || ''} — ${matchName(match)}`);
+      return match.team1 && match.team2 && !['BYE', 'VAZIO', 'FINALIZADO'].includes(statusOf(match));
+    });
+
+    candidates.forEach(match => {
+      const released = canSelect(match);
+      const suffix = released ? 'LIBERADA' : 'AGUARDANDO LIBERAÇÃO';
+      const option = el('option', '', `Jogo ${match.game} — ${match.phase || ''} — ${matchName(match)} — ${suffix}`);
       option.value = String(match.game);
-      const available = match.availableAt ? V.date(match.availableAt) : null;
-      option.disabled = !match.availableAt || Boolean(available && available.getTime() > Date.now());
+      option.disabled = !released;
       scoreGame.appendChild(option);
     });
 
-    if ([...scoreGame.options].some(option => option.value === previous && !option.disabled)) {
-      scoreGame.value = previous;
-    }
+    const previousOption = [...scoreGame.options].find(option => option.value === previous && !option.disabled);
+    const firstReleased = [...scoreGame.options].find(option => option.value && !option.disabled);
+    if (previousOption) scoreGame.value = previous;
+    else if (firstReleased) scoreGame.value = firstReleased.value;
+    else scoreGame.value = '';
+
     fillScore(selectedMatch());
   }
 
@@ -153,6 +179,7 @@
   A.fillScore = fillScore;
   A.clearScoreDraft = clearDraft;
   A.scoreIsDirty = () => dirty || scoreInputs.some(input => document.activeElement === input);
+  A.canSelectMatch = canSelect;
 
   scoreGame.addEventListener('change', () => {
     dirty = false;
