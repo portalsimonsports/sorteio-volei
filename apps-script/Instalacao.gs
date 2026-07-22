@@ -32,6 +32,9 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  definirConfig_('FORMATO_PARTIDA','MELHOR_DE_3','Formato da partida');
  definirConfig_('REGISTRAR_INICIO_PARTIDA','ATIVO','Registra o horário real ao iniciar cada partida');
  definirConfig_('CHAVEAMENTO_7_DUPLAS','3_QUARTAS_1_DIRETA','Sete duplas: três quartas e uma equipe diretamente na semifinal');
+ definirConfig_('HISTORICO_CAMPEONATOS','ATIVO','Preserva equipes, jogos, placares e classificação de cada edição');
+ definirConfig_('REUTILIZAR_MESMAS_EQUIPES','ATIVO','Permite novo chaveamento com as mesmas duplas');
+ definirConfig_('CAMPEONATO_MODELO','AUTOMATICO','Modelo padrão das novas edições');
  definirConfig_('MODALIDADE','VOLEI_DE_QUADRA','Modalidade');
  if(aba_(VOLEI.SHEETS.SORTEIOS).getLastRow()<2)criarEstadoInscricoes_('Sistema configurado. Inscrições abertas.');
  INSTALAR_ACIONADOR_AUTOMATICO();
@@ -42,7 +45,7 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  log_('SISTEMA_CONFIGURADO','','EDITOR','ADMIN','Backend '+VOLEI.VERSION+' configurado.','INFO','SISTEMA');
  Logger.log('ADMIN_KEY gravada em CONFIG: '+adminKey);
  Logger.log('WEB_APP_URL: '+urlPublica);
- return{ok:true,adminKey,webAppUrl:urlPublica,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
+ return{ok:true,adminKey:adminKey,webAppUrl:urlPublica,spreadsheetId:VOLEI.SPREADSHEET_ID,versao:VOLEI.VERSION};
 }
 function INSTALAR_SISTEMA_COMPLETO(){return CONFIGURAR_SISTEMA_INICIAL();}
 function REGISTRAR_URL_WEB_APP(){const config=obterConfig_(),detectada=ScriptApp.getService().getUrl()||'',url=/\/exec(?:\?|$)/.test(detectada)?detectada:texto_(config.API_WEB_APP);if(!url)throw Error('Informe primeiro uma URL pública terminada em /exec na aba CONFIG.');definirConfig_('API_WEB_APP',url,'URL pública /exec do Apps Script');Logger.log('WEB_APP_URL: '+url);return{ok:true,webAppUrl:url};}
