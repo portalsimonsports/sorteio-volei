@@ -1,13 +1,13 @@
-/** SORTEIO DE DUPLAS DE VÔLEI — V014 */
+/** SORTEIO DE DUPLAS DE VÔLEI — V015 */
 const VOLEI=Object.freeze({
- VERSION:'V014_CHAVEAMENTO_COMPACTO_CLASSIFICACAO_FINAL_2026-07-22',
+ VERSION:'V015_SETS_PONTOS_HORARIO_REAL_CHAVEAMENTO_7_2026-07-22',
  SPREADSHEET_ID:'1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',TIMEZONE:'America/Sao_Paulo',
  SITE_URL:'https://portalsimonsports.github.io/sorteio-volei/',ADMIN_URL:'https://portalsimonsports.github.io/sorteio-volei/admin.html',
  SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS'}),
  HEADERS:Object.freeze({
   JOGADORES:['ID','NOME','DATA_NASCIMENTO','IDADE','POTE','CATEGORIA','NOTA_DESEMPENHO','NOTA_AJUSTADA','ATIVO','DATA_CADASTRO','OBSERVAÇÃO'],
   EQUIPES:['EQUIPE_ID','ADULTO_ID','ADULTO','NOTA_ADULTO','INDICE_ADULTO','CRIANCA_ID','CRIANCA','NOTA_CRIANCA','INDICE_CRIANCA','INDICE_TOTAL','ORDEM_BALANCEAMENTO','ORDEM_CHAVEAMENTO'],
-  CHAVEAMENTO:['SORTEIO_ID','JOGO','FASE','EQUIPE_1_ID','EQUIPE_1','EQUIPE_2_ID','EQUIPE_2','SET1_EQ1','SET1_EQ2','SET2_EQ1','SET2_EQ2','SET3_EQ1','SET3_EQ2','SETS_EQ1','SETS_EQ2','VENCEDOR_ID','STATUS','FIM_PARTIDA','DISPONIVEL_EM','RODADA_INDEX','PROXIMO_JOGO','PROXIMO_SLOT'],
+  CHAVEAMENTO:['SORTEIO_ID','JOGO','FASE','EQUIPE_1_ID','EQUIPE_1','EQUIPE_2_ID','EQUIPE_2','SET1_EQ1','SET1_EQ2','SET2_EQ1','SET2_EQ2','SET3_EQ1','SET3_EQ2','SETS_EQ1','SETS_EQ2','VENCEDOR_ID','STATUS','FIM_PARTIDA','DISPONIVEL_EM','RODADA_INDEX','PROXIMO_JOGO','PROXIMO_SLOT','INICIO_PARTIDA','PLACAR_JSON'],
   SORTEIOS:['SORTEIO_ID','STATUS','CODIGO_HASH','CODIGO_FINAL','CRIADO_EM','ATIVADO_EM','INICIO_PREVISTO','REALIZADO_EM','SEED','HASH_AUDITORIA','ATIVADO_POR','MENSAGEM','FINALIZADO_EM','CAMPEAO_ID'],
   LOG:['DATA_HORA','EVENTO','SORTEIO_ID','ORIGEM','USUARIO','DETALHES','NIVEL','ENTIDADE_ID'],
   LISTAS:['POTE','CATEGORIA','ATIVO','STATUS_SORTEIO','STATUS_JOGO','FASE']
@@ -21,7 +21,10 @@ function executarApi_(p){try{const a=texto_(p.acao||'estado');let d;switch(a){
  case'excluirJogador':exigirAdmin_(p.chave);d=excluirParticipante_(p.id);break;case'sortearAgora':exigirAdmin_(p.chave);d=realizarSorteioAgora_('PAINEL_WEB');break;
  case'iniciarContagem':exigirAdmin_(p.chave);d=iniciarContagemDireta_(p.segundos);break;
  case'gerarCodigo':exigirAdmin_(p.chave);d=gerarCodigoAtivacao_();break;case'ativar':d=ativarSorteio_(p.codigo,p.origem||'SITE');break;
- case'cancelar':exigirAdmin_(p.chave);d=cancelarSorteio_('PAINEL_WEB');break;case'registrarResultado':exigirAdmin_(p.chave);d=registrarResultado_(p.jogo,p.vencedorId||p.payload);break;
+ case'cancelar':exigirAdmin_(p.chave);d=cancelarSorteio_('PAINEL_WEB');break;
+ case'salvarRegras':exigirAdmin_(p.chave);d=salvarRegrasPartida_(p);break;
+ case'iniciarPartida':exigirAdmin_(p.chave);d=iniciarPartida_(p.jogo);break;
+ case'registrarResultado':exigirAdmin_(p.chave);d=registrarResultado_(p.jogo,p.payload||p.vencedorId);break;
  case'resetar':exigirAdmin_(p.chave);d=resetarSorteio_();break;case'limparTudo':exigirAdmin_(p.chave);d=limparTudo_();break;
  case'diagnostico':exigirAdmin_(p.chave);d=DIAGNOSTICO_SISTEMA();break;default:throw Error('Ação inválida: '+a);}
  return responder_({ok:true,dados:d,versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}}
