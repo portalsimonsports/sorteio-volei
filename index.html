@@ -6,8 +6,9 @@
   <meta name="theme-color" content="#07111f">
   <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
   <title>Sorteio de Duplas de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260721-2145">
-  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2145">
+  <link rel="stylesheet" href="assets/style.css?v=20260721-2240">
+  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2240">
+  <link rel="stylesheet" href="assets/event-live.css?v=20260721-2240">
 </head>
 <body data-page="public">
   <header class="topbar public-topbar">
@@ -44,6 +45,26 @@
       </div>
     </section>
 
+    <section class="live-event-section" aria-label="Informações ao vivo do evento">
+      <div class="live-event-grid">
+        <article class="live-event-card live-clock-card">
+          <span class="live-label">Data e horário em Jatobá/SP</span>
+          <strong id="liveTime">--:--:--</strong>
+          <small id="liveDate">Carregando data local...</small>
+        </article>
+        <article class="live-event-card live-weather-card">
+          <span class="live-label">Clima em Jatobá/SP</span>
+          <div class="weather-line"><span class="weather-icon" id="weatherIcon">🌤️</span><strong id="weatherTemperature">--°C</strong></div>
+          <div class="weather-details"><span id="weatherCondition">Consultando condições atuais...</span><span id="weatherWind">Vento: --</span></div>
+        </article>
+        <article class="live-event-card live-countdown-card">
+          <span class="live-label">Primeira partida • 10h15</span>
+          <strong class="first-match-countdown" id="firstMatchCountdown">--:--:--</strong>
+          <small id="firstMatchTarget">Calculando o início da primeira partida...</small>
+        </article>
+      </div>
+    </section>
+
     <section class="countdown-stage" id="countdownStage" hidden aria-live="assertive">
       <div class="countdown-card">
         <span class="countdown-kicker">Sorteio ao vivo</span>
@@ -68,7 +89,7 @@
           <label>Nota técnica<input id="signupScore" type="number" min="0" max="10" step="1" required placeholder="0 a 10"></label>
           <button class="btn primary" id="signupButton" type="submit">Confirmar inscrição</button>
         </form>
-        <div class="info-chips"><span>18 anos ou mais: Adulto</span><span>Menos de 18 anos: Criança</span><span>A nota é usada apenas internamente no equilíbrio das duplas</span></div>
+        <div class="info-chips"><span>18 anos ou mais: Adulto</span><span>Menos de 18 anos: Criança</span></div>
         <div class="message" id="signupMessage" aria-live="polite"></div>
       </div>
     </section>
@@ -113,11 +134,11 @@
 
   <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Melhor de 3 sets • Final e disputa de 3º lugar</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260721-2145"></script>
-  <script src="assets/core-data.js?v=20260721-2145"></script>
-  <script src="assets/tournament-bracket.js?v=20260721-2145"></script>
-  <script src="assets/tournament-score.js?v=20260721-2145"></script>
-  <script src="assets/tournament-api.js?v=20260721-2145"></script>
-  <script src="assets/public.js?v=20260721-2145"></script>
+  <script src="config.js?v=20260721-2240"></script>
+  <script src="assets/core-data.js?v=20260721-2240"></script>
+  <script src="assets/tournament-bracket.js?v=20260721-2240"></script>
+  <script src="assets/tournament-score.js?v=20260721-2240"></script>
+  <script src="assets/tournament-api.js?v=20260721-2240"></script>
+  <script src="assets/public.js?v=20260721-2240"></script>
 </body>
 </html>
