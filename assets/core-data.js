@@ -2,7 +2,7 @@
   'use strict';
 
   const C = window.VOLEI_CONFIG || {};
-  const KEY = 'sorteio_volei_independente_v5';
+  const KEY = 'sorteio_volei_independente_v10';
   const CONNECTORS = new Set(['de', 'da', 'do', 'das', 'dos', 'e']);
 
   function esc(value) {
@@ -47,6 +47,8 @@
   }
 
   function age(value, reference = new Date()) {
+    const direct = Number(value);
+    if (Number.isInteger(direct) && direct >= 0 && direct <= 120) return direct;
     const birth = parseDate(value);
     if (!birth) return -1;
     let result = reference.getFullYear() - birth.getFullYear();
@@ -55,6 +57,10 @@
       (reference.getMonth() === birth.getMonth() && reference.getDate() < birth.getDate())
     ) result--;
     return result;
+  }
+
+  function syntheticBirthDate(playerAge, reference = new Date()) {
+    return `${reference.getFullYear() - Number(playerAge)}-01-01`;
   }
 
   function category(value) {
@@ -74,15 +80,15 @@
 
   function validatePlayer(params) {
     const name = normalizeName(params.name ?? params.nome);
-    const birthDate = dateInput(params.birthDate ?? params.dataNascimento);
-    const playerAge = age(birthDate);
+    let playerAge = Number(params.age ?? params.idade);
+    if (!Number.isInteger(playerAge)) playerAge = age(params.birthDate ?? params.dataNascimento);
     const score = num(params.score ?? params.nota);
     const playerCategory = category(playerAge);
     const active = String(params.active ?? params.ativo ?? 'SIM').toUpperCase();
 
     if (name.length < 2) throw new Error('Informe o nome do participante.');
-    if (!birthDate || playerAge < 0 || playerAge > 100) {
-      throw new Error('Informe uma data de nascimento válida.');
+    if (!Number.isInteger(playerAge) || playerAge < 1 || playerAge > 100) {
+      throw new Error('Informe uma idade válida entre 1 e 100 anos.');
     }
     if (!Number.isInteger(score) || score < 0 || score > 10) {
       throw new Error('A nota de desempenho deve ser um número inteiro de 0 a 10.');
@@ -94,8 +100,8 @@
 
     return {
       name,
-      birthDate,
       age: playerAge,
+      birthDate: syntheticBirthDate(playerAge),
       pot: playerCategory.pot,
       category: playerCategory.code,
       categoryLabel: playerCategory.label,
@@ -107,38 +113,53 @@
 
   function initialState() {
     return {
-      version: C.VERSION || 'V005',
+      version: C.VERSION || 'V010',
       title: C.APP_NAME || 'Sorteio de Duplas de Vôlei',
       status: 'INSCRICOES',
       message: 'Inscrições abertas.',
       serverTime: new Date().toISOString(),
-      players: [],
-      teams: [],
-      rounds: [],
-      auditHash: ''
+      players: [], teams: [], rounds: [], auditHash: ''
     };
+  }
+
+  function inferredPot(id, fallback = '') {
+    const text = String(id || '').toUpperCase();
+    if (text.startsWith('A-')) return 'A';
+    if (text.startsWith('B-')) return 'B';
+    return fallback;
   }
 
   function normalizeTeam(team) {
     if (!team) return null;
+    const member1Id = team.member1Id ?? team.jogador1Id ?? team.adultId ?? team.adultoId ?? '';
+    const member2Id = team.member2Id ?? team.jogador2Id ?? team.childId ?? team.criancaId ?? '';
+    const member1 = team.member1 ?? team.jogador1 ?? team.adult ?? team.adulto ?? '';
+    const member2 = team.member2 ?? team.jogador2 ?? team.child ?? team.crianca ?? '';
+    const member1Pot = team.member1Pot ?? team.pote1 ?? inferredPot(member1Id, 'A');
+    const member2Pot = team.member2Pot ?? team.pote2 ?? inferredPot(member2Id, 'B');
+    const member1Index = num(team.member1Index ?? team.indice1 ?? team.adultIndex ?? team.indiceAdulto);
+    const member2Index = num(team.member2Index ?? team.indice2 ?? team.childIndex ?? team.indiceCrianca);
     return {
       id: team.id,
-      adultId: team.adultId ?? team.adultoId,
-      adult: team.adult ?? team.adulto,
-      adultIndex: num(team.adultIndex ?? team.indiceAdulto),
-      childId: team.childId ?? team.criancaId,
-      child: team.child ?? team.crianca,
-      childIndex: num(team.childIndex ?? team.indiceCrianca),
-      totalIndex: num(team.totalIndex ?? team.indiceTotal)
+      member1Id, member1, member1Pot,
+      member1Score: num(team.member1Score ?? team.nota1 ?? team.adultScore),
+      member1Index,
+      member2Id, member2, member2Pot,
+      member2Score: num(team.member2Score ?? team.nota2 ?? team.childScore),
+      member2Index,
+      type: team.type ?? team.tipo ?? (member1Pot === member2Pot ? (member1Pot === 'A' ? 'ADULTOS' : 'CRIANCAS') : 'MISTA'),
+      totalIndex: num(team.totalIndex ?? team.indiceTotal ?? member1Index + member2Index),
+      adultId: member1Pot === 'A' ? member1Id : (member2Pot === 'A' ? member2Id : ''),
+      adult: member1Pot === 'A' ? member1 : (member2Pot === 'A' ? member2 : ''),
+      childId: member1Pot === 'B' ? member1Id : (member2Pot === 'B' ? member2Id : ''),
+      child: member1Pot === 'B' ? member1 : (member2Pot === 'B' ? member2 : '')
     };
   }
 
   function normalizeMatch(match) {
     match.team1 = normalizeTeam(match.team1);
     match.team2 = normalizeTeam(match.team2);
-    match.scores = Array.isArray(match.scores)
-      ? match.scores
-      : [[null, null], [null, null], [null, null]];
+    match.scores = Array.isArray(match.scores) ? match.scores : [[null, null], [null, null], [null, null]];
     while (match.scores.length < 3) match.scores.push([null, null]);
     match.sets1 = Number(match.sets1 || 0);
     match.sets2 = Number(match.sets2 || 0);
@@ -150,13 +171,20 @@
   }
 
   function normalizeState(state) {
-    state.version = state.version || C.VERSION || 'V005';
+    state.version = state.version || C.VERSION || 'V010';
     state.title = state.title || C.APP_NAME || 'Sorteio de Duplas de Vôlei';
     state.status = state.status || 'INSCRICOES';
     state.message = state.message || 'Inscrições abertas.';
-    state.players = Array.isArray(state.players) ? state.players : (state.jogadores || []);
-    state.teams = (Array.isArray(state.teams) ? state.teams : (state.equipes || []))
-      .map(normalizeTeam);
+    state.players = (Array.isArray(state.players) ? state.players : (state.jogadores || [])).map(player => ({
+      ...player,
+      name: player.name ?? player.nome ?? '',
+      age: Number.isInteger(Number(player.age ?? player.idade)) ? Number(player.age ?? player.idade) : age(player.birthDate ?? player.dataNascimento),
+      pot: player.pot || category(age(player.birthDate ?? player.dataNascimento)).pot,
+      active: String(player.active ?? player.ativo ?? 'SIM').toUpperCase(),
+      score: num(player.score ?? player.nota),
+      adjustedScore: num(player.adjustedScore ?? player.indiceAjustado ?? adjustedIndex(player.score ?? player.nota))
+    }));
+    state.teams = (Array.isArray(state.teams) ? state.teams : (state.equipes || [])).map(normalizeTeam);
     state.rounds = Array.isArray(state.rounds) ? state.rounds : [];
     state.rounds.forEach(round => {
       round.matches = Array.isArray(round.matches) ? round.matches.map(normalizeMatch) : [];
@@ -182,52 +210,35 @@
   function savePlayer(params, admin = false) {
     const state = readState();
     const valid = validatePlayer(params);
-    const id = params.id ||
-      `${valid.pot}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-
+    const id = params.id || `${valid.pot}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const duplicate = state.players.some(player =>
-      player.id !== id &&
-      normalizeName(player.name ?? player.nome) === valid.name &&
-      dateInput(player.birthDate ?? player.dataNascimento) === valid.birthDate
+      player.id !== id && normalizeName(player.name ?? player.nome) === valid.name && Number(player.age ?? player.idade) === valid.age
     );
     if (duplicate) throw new Error('Este participante já está inscrito.');
 
     const player = {
-      id,
-      name: valid.name,
-      birthDate: valid.birthDate,
-      age: valid.age,
-      pot: valid.pot,
-      category: valid.category,
-      categoryLabel: valid.categoryLabel,
-      score: valid.score,
-      adjustedScore: valid.adjustedScore,
-      active: admin ? valid.active : 'SIM',
-      createdAt: params.createdAt || new Date().toISOString()
+      id, name: valid.name, age: valid.age, birthDate: valid.birthDate,
+      pot: valid.pot, category: valid.category, categoryLabel: valid.categoryLabel,
+      score: valid.score, adjustedScore: valid.adjustedScore,
+      active: admin ? valid.active : 'SIM', createdAt: params.createdAt || new Date().toISOString()
     };
 
     const index = state.players.findIndex(item => item.id === id);
-    if (index >= 0) state.players.splice(index, 1, player);
-    else state.players.push(player);
-
+    if (index >= 0) state.players.splice(index, 1, player); else state.players.push(player);
     state.status = 'INSCRICOES';
     state.message = 'Inscrições abertas.';
     state.teams = [];
     state.rounds = [];
     saveState(state);
-
     return {
-      message: admin
-        ? 'Participante salvo.'
-        : `Inscrição confirmada no Pote ${player.pot} — ${player.categoryLabel}.`,
-      player,
-      state
+      message: admin ? 'Participante salvo.' : `Inscrição confirmada no Pote ${player.pot} — ${player.categoryLabel}.`,
+      player, state
     };
   }
 
   window.VoleiBase = {
-    C, KEY, esc, num, fmt, normalizeName, parseDate, dateInput, age, category,
-    adjustedIndex, validatePlayer, initialState, normalizeTeam, normalizeMatch,
+    C, KEY, esc, num, fmt, normalizeName, parseDate, dateInput, age, syntheticBirthDate,
+    category, adjustedIndex, validatePlayer, initialState, normalizeTeam, normalizeMatch,
     normalizeState, readState, saveState, savePlayer
   };
 })();
