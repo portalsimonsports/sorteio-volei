@@ -16,7 +16,7 @@
     try {
       await V.request('iniciarContagem', { segundos: 600 });
       V.toast('Contagem regressiva iniciada na página pública.');
-      await A.refresh();
+      await A.refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -29,7 +29,7 @@
     try {
       await V.request('resetar');
       V.toast('Sorteio reiniciado.');
-      await A.refresh();
+      await A.refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     }
@@ -44,7 +44,7 @@
     try {
       await V.request('limparTudo');
       V.toast(local ? 'Dados locais apagados.' : 'Dados da planilha apagados.');
-      await A.refresh();
+      await A.refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     }
@@ -87,7 +87,7 @@
       });
       V.toast(`Placar salvo. Intervalo de ${C.MATCH_INTERVAL_MINUTES || 10} minutos iniciado.`);
       scoreForm.reset();
-      await A.refresh();
+      await A.refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -97,9 +97,9 @@
 
   ui.sheetLink.href = C.SHEET_URL || '#';
   A.preview();
-  A.refresh();
-  setInterval(A.refresh, 10000);
+  A.refresh(true);
+  setInterval(() => A.refresh(true), 10000);
   window.addEventListener('storage', event => {
-    if (event.key === V.KEY) A.refresh();
+    if (event.key === V.KEY) A.refresh(true);
   });
 })();
