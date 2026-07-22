@@ -12,7 +12,13 @@
     const source = state?.rules || {};
     const bestOfRaw = Number(source.bestOf ?? V.C.BEST_OF_SETS ?? 3);
     const bestOf = [1, 3, 5].includes(bestOfRaw) ? bestOfRaw : 3;
-    return { bestOf };
+    return {
+      bestOf,
+      setsToWin: Number(source.setsToWin || Math.floor(bestOf / 2) + 1),
+      normalSetPoints: Number(source.normalSetPoints || V.C.NORMAL_SET_POINTS || 25),
+      tiebreakSetPoints: Number(source.tiebreakSetPoints || V.C.TIEBREAK_SET_POINTS || 15),
+      minimumLead: Number(source.minimumLead || V.C.MINIMUM_LEAD || 2)
+    };
   }
 
   function findCard(game) {
@@ -37,20 +43,48 @@
     return `Classificação direta: ${V.teamName(direct)} aguarda ${waiting}.`;
   }
 
+  function updateRules(stateRules) {
+    const r = rules({ rules: stateRules });
+    const bestOf = document.getElementById('publicBestOf');
+    const setsToWin = document.getElementById('publicSetsToWin');
+    const normal = document.getElementById('publicNormalPoints');
+    const tie = document.getElementById('publicTiePoints');
+    const lead = document.getElementById('publicMinimumLead');
+    if (bestOf) bestOf.textContent = r.bestOf === 1 ? 'Partida em 1 set' : `Melhor de ${r.bestOf} sets`;
+    if (setsToWin) setsToWin.textContent = `A dupla que vencer ${r.setsToWin} set${r.setsToWin === 1 ? '' : 's'} ganha a partida.`;
+    if (normal) normal.textContent = `${r.normalSetPoints} pontos`;
+    if (tie) tie.textContent = r.bestOf === 1 ? 'Sem set decisivo' : `${r.tiebreakSetPoints} pontos`;
+    if (lead) lead.textContent = `Vantagem de ${r.minimumLead}`;
+  }
+
+  function rebuildScoreRows(card, match, bestOf) {
+    const rows = card.querySelectorAll('.score-row');
+    rows.forEach((row, side) => {
+      const total = row.querySelector('strong');
+      row.querySelectorAll('b').forEach(cell => cell.remove());
+      const scores = Array.from({ length: bestOf }, (_, index) => match.scores?.[index]?.[side]);
+      scores.forEach(value => {
+        const cell = document.createElement('b');
+        cell.textContent = value === null || value === undefined ? '–' : String(value);
+        row.insertBefore(cell, total);
+      });
+    });
+  }
+
   function apply(state) {
     if (!state || applying) return;
     applying = true;
     try {
-      const bestOf = rules(state).bestOf;
-      bracket.style.setProperty('--score-set-count', String(bestOf));
+      const currentRules = rules(state);
+      updateRules(state.rules || {});
+      bracket.style.setProperty('--score-set-count', String(currentRules.bestOf));
       const matches = (state.rounds || []).flatMap(round => round.matches || []);
       matches.forEach(match => {
         const card = findCard(match.game);
         if (!card) return;
         const header = card.querySelector('.score-head');
-        if (header) {
-          header.innerHTML = `<span>Dupla</span>${Array.from({ length: bestOf }, (_, index) => `<b>${index + 1}º</b>`).join('')}<b>Sets</b>`;
-        }
+        if (header) header.innerHTML = `<span>Dupla</span>${Array.from({ length: currentRules.bestOf }, (_, index) => `<b>${index + 1}º</b>`).join('')}<b>Sets</b>`;
+        rebuildScoreRows(card, match, currentRules.bestOf);
         const status = card.querySelector('.match-status');
         const exactTime = timeText(match);
         const direct = directAdvanceText(match);
