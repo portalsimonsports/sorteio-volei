@@ -7,8 +7,8 @@
   <meta name="robots" content="noindex,nofollow">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Administração do Sorteio de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260722-0840">
-  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-0840">
+  <link rel="stylesheet" href="assets/style.css?v=20260722-1150">
+  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-1150">
 </head>
 <body data-page="admin">
   <header class="topbar">
@@ -54,11 +54,11 @@
     <section class="panel" style="margin-top:18px">
       <div class="panel-head"><div><span class="kicker">Placares</span><h2>Lançar resultado</h2><p>Selecione a partida e preencha o placar final de cada set.</p></div></div>
       <div class="rule-note">Vôlei de quadra em melhor de 3: 1º e 2º sets até 25 pontos; 3º set até 15; vantagem mínima de 2; intervalo de 10 minutos; perdedores das semifinais disputam o 3º lugar.</div>
-      <form id="scoreForm" class="panel" style="box-shadow:none;margin-top:14px">
-        <label>Partida<select id="scoreGame" required><option value="">Selecione uma partida</option></select></label>
+      <form id="scoreForm" class="panel" style="box-shadow:none;margin-top:14px" novalidate>
+        <label>Partida<select id="scoreGame"><option value="">Selecione uma partida</option></select></label>
         <div class="set-grid" style="margin-top:14px">
-          <div class="set-title">1º set — 25 pontos</div><label>Equipe 1<input id="scoreS1A" type="number" min="0" step="1" required></label><label>Equipe 2<input id="scoreS1B" type="number" min="0" step="1" required></label>
-          <div class="set-title">2º set — 25 pontos</div><label>Equipe 1<input id="scoreS2A" type="number" min="0" step="1" required></label><label>Equipe 2<input id="scoreS2B" type="number" min="0" step="1" required></label>
+          <div class="set-title">1º set — 25 pontos</div><label>Equipe 1<input id="scoreS1A" type="number" min="0" step="1"></label><label>Equipe 2<input id="scoreS1B" type="number" min="0" step="1"></label>
+          <div class="set-title">2º set — 25 pontos</div><label>Equipe 1<input id="scoreS2A" type="number" min="0" step="1"></label><label>Equipe 2<input id="scoreS2B" type="number" min="0" step="1"></label>
           <div class="set-title">3º set — 15 pontos</div><label>Equipe 1<input id="scoreS3A" type="number" min="0" step="1"></label><label>Equipe 2<input id="scoreS3B" type="number" min="0" step="1"></label>
         </div>
         <div class="availability" id="scoreGameInfo">Nenhuma partida selecionada.</div>
@@ -71,18 +71,18 @@
   </main>
 
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260722-0840"></script>
-  <script src="assets/core-data.js?v=20260722-0840"></script>
-  <script src="assets/tournament-bracket.js?v=20260722-0840"></script>
-  <script src="assets/draw-tiebreak-v012.js?v=20260722-0840"></script>
-  <script src="assets/tournament-score.js?v=20260722-0840"></script>
-  <script src="assets/tournament-api.js?v=20260722-0840"></script>
-  <script src="assets/rating-rule-v011.js?v=20260722-0840"></script>
-  <script src="assets/v010-compat.js?v=20260722-0840"></script>
-  <script src="assets/admin-base.js?v=20260722-0840"></script>
-  <script src="assets/rating-admin-v011.js?v=20260722-0840"></script>
-  <script src="assets/admin-results.js?v=20260722-0840"></script>
-  <script src="assets/admin-actions.js?v=20260722-0840"></script>
-  <script src="assets/admin-tournament-actions.js?v=20260722-0840"></script>
+  <script src="config.js?v=20260722-1150"></script>
+  <script src="assets/core-data.js?v=20260722-1150"></script>
+  <script src="assets/tournament-bracket.js?v=20260722-1150"></script>
+  <script src="assets/draw-tiebreak-v012.js?v=20260722-1150"></script>
+  <script src="assets/tournament-score.js?v=20260722-1150"></script>
+  <script src="assets/tournament-api.js?v=20260722-1150"></script>
+  <script src="assets/rating-rule-v011.js?v=20260722-1150"></script>
+  <script src="assets/v010-compat.js?v=20260722-1150"></script>
+  <script src="assets/admin-base.js?v=20260722-1150"></script>
+  <script src="assets/rating-admin-v011.js?v=20260722-1150"></script>
+  <script src="assets/admin-results.js?v=20260722-1150"></script>
+  <script src="assets/admin-actions.js?v=20260722-1150"></script>
+  <script src="assets/admin-tournament-actions.js?v=20260722-1150"></script>
 </body>
 </html>
