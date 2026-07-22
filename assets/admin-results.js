@@ -9,6 +9,8 @@
   const scoreInfo = document.getElementById('scoreGameInfo');
   const scoreIds = ['scoreS1A','scoreS1B','scoreS2A','scoreS2B','scoreS3A','scoreS3B'];
   const scoreInputs = scoreIds.map(id => document.getElementById(id));
+  const DRAFT_KEY = 'sorteio_volei_placar_rascunho_v1';
+  let dirty = false;
 
   function matchName(match) {
     return `${V.teamName(match.team1)} × ${V.teamName(match.team2)}`;
@@ -34,13 +36,40 @@
     return 'Partida liberada para lançamento do placar';
   }
 
-  function fillScore(match) {
-    const values = [
+  function readDraft() {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || '{}'); }
+    catch (_) { return {}; }
+  }
+
+  function saveDraft() {
+    if (!scoreGame.value) return;
+    const drafts = readDraft();
+    drafts[scoreGame.value] = scoreInputs.map(input => input.value);
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+    dirty = scoreInputs.some(input => input.value !== '');
+  }
+
+  function clearDraft(game) {
+    const drafts = readDraft();
+    delete drafts[String(game || scoreGame.value)];
+    sessionStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
+    dirty = false;
+  }
+
+  function fillScore(match, force = false) {
+    if (!force && dirty && match && String(match.game) === String(scoreGame.value)) {
+      scoreInfo.textContent = `${matchName(match)} — ${availability(match)} — placar digitado preservado`;
+      return;
+    }
+
+    const draft = match ? readDraft()[String(match.game)] : null;
+    const values = draft || [
       match?.scores?.[0]?.[0], match?.scores?.[0]?.[1],
       match?.scores?.[1]?.[0], match?.scores?.[1]?.[1],
       match?.scores?.[2]?.[0], match?.scores?.[2]?.[1]
     ];
-    scoreInputs.forEach((input, index) => input.value = values[index] ?? '');
+    scoreInputs.forEach((input, index) => input.value = values?.[index] ?? '');
+    dirty = Boolean(draft && draft.some(value => value !== ''));
     scoreInfo.textContent = match ? `${matchName(match)} — ${availability(match)}` : 'Nenhuma partida selecionada.';
   }
 
@@ -99,7 +128,6 @@
     }
 
     appendPodium(rounds);
-
     rounds.forEach(round => {
       const section = el('section');
       section.appendChild(el('h3', '', round.name));
@@ -123,5 +151,12 @@
   };
   A.selectedMatch = selectedMatch;
   A.fillScore = fillScore;
-  scoreGame.addEventListener('change', () => fillScore(selectedMatch()));
+  A.clearScoreDraft = clearDraft;
+  A.scoreIsDirty = () => dirty || scoreInputs.some(input => document.activeElement === input);
+
+  scoreGame.addEventListener('change', () => {
+    dirty = false;
+    fillScore(selectedMatch(), true);
+  });
+  scoreInputs.forEach(input => input.addEventListener('input', saveDraft));
 })();
