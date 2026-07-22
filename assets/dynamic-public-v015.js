@@ -29,10 +29,14 @@
   }
 
   function timeText(match) {
-    if (String(match.status || '').toUpperCase() !== 'FINALIZADO') return '';
-    if (match.startedAt && match.finishedAt) return `Início ${V.dateTime(match.startedAt, true)} • Término ${V.dateTime(match.finishedAt, true)}`;
-    if (match.finishedAt) return `Resultado registrado em ${V.dateTime(match.finishedAt, true)}`;
-    return 'Partida finalizada';
+    const status = String(match.status || '').toUpperCase();
+    if (status === 'FINALIZADO') {
+      if (match.startedAt && match.finishedAt) return `Início ${V.dateTime(match.startedAt, true)} • Término ${V.dateTime(match.finishedAt, true)}`;
+      if (match.finishedAt) return `Resultado registrado em ${V.dateTime(match.finishedAt, true)}`;
+      return 'Partida finalizada';
+    }
+    if (match.startedAt && status === 'EM_DISPUTA') return `Iniciada em ${V.dateTime(match.startedAt, true)} • Partida em disputa`;
+    return '';
   }
 
   function directAdvanceText(match) {
