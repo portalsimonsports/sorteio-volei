@@ -24,11 +24,14 @@ function CONFIGURAR_SISTEMA_INICIAL(){
  definirConfig_('EXIBIR_IDADE_PUBLICO','SIM','Exibir somente nome e idade dos participantes');
  definirConfig_('DISPUTA_TERCEIRO_LUGAR','ATIVA','Perdedores das semifinais disputam o terceiro lugar');
  definirConfig_('INTERVALO_ENTRE_PARTIDAS_MINUTOS',10,'Intervalo obrigatório entre partidas');
- definirConfig_('PONTOS_SET_NORMAL',25,'Pontuação-alvo do 1º e do 2º sets');
- definirConfig_('PONTOS_SET_DESEMPATE',15,'Pontuação-alvo do 3º set');
+ definirConfig_('MELHOR_DE_SETS',3,'Quantidade máxima de sets por partida: 1, 3 ou 5');
+ definirConfig_('PONTOS_SET_NORMAL',25,'Pontuação-alvo dos sets normais');
+ definirConfig_('PONTOS_SET_DESEMPATE',15,'Pontuação-alvo do último set decisivo');
  definirConfig_('SETS_PARA_VENCER',2,'Sets necessários para vencer');
  definirConfig_('VANTAGEM_MINIMA_SET',2,'Vantagem mínima para encerrar o set');
  definirConfig_('FORMATO_PARTIDA','MELHOR_DE_3','Formato da partida');
+ definirConfig_('REGISTRAR_INICIO_PARTIDA','ATIVO','Registra o horário real ao iniciar cada partida');
+ definirConfig_('CHAVEAMENTO_7_DUPLAS','3_QUARTAS_1_DIRETA','Sete duplas: três quartas e uma equipe diretamente na semifinal');
  definirConfig_('MODALIDADE','VOLEI_DE_QUADRA','Modalidade');
  if(aba_(VOLEI.SHEETS.SORTEIOS).getLastRow()<2)criarEstadoInscricoes_('Sistema configurado. Inscrições abertas.');
  INSTALAR_ACIONADOR_AUTOMATICO();
