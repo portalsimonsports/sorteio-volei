@@ -6,6 +6,13 @@
   align-items: center;
 }
 
+/* A linha dos placares possui 8 px de preenchimento interno.
+   O mesmo recuo no cabeçalho mantém 1º, 2º, 3º e Sets exatamente
+   sobre as respectivas pontuações. */
+#chaveamento .score-head {
+  padding-inline: 8px;
+}
+
 #chaveamento .score-head > span,
 #chaveamento .score-row > span {
   min-width: 0;
@@ -21,6 +28,7 @@
   place-items: center;
   text-align: center;
   justify-self: stretch;
+  font-variant-numeric: tabular-nums;
 }
 
 #chaveamento .score-head > b {
