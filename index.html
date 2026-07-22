@@ -7,9 +7,10 @@
   <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Sorteio de Duplas de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260721-2355">
-  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260721-2355">
-  <link rel="stylesheet" href="assets/event-live.css?v=20260721-2355">
+  <link rel="stylesheet" href="assets/style.css?v=20260722-0815">
+  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260722-0815">
+  <link rel="stylesheet" href="assets/event-live.css?v=20260722-0815">
+  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-0815">
 </head>
 <body data-page="public">
   <header class="topbar public-topbar">
@@ -55,7 +56,7 @@
         <form class="signup-grid" id="signupForm">
           <label>Nome<input id="signupName" maxlength="50" autocomplete="name" required placeholder="Nome do participante"></label>
           <label>Idade<input id="signupAge" type="number" min="1" max="100" step="1" required placeholder="Idade em anos"></label>
-          <label>Como você avalia o seu jogo? (5 a 10)<input id="signupScore" type="number" min="5" max="10" step="1" required placeholder="5 a 10"></label>
+          <label>Como você avalia o seu jogo?<input id="signupScore" type="text" inputmode="text" maxlength="3" required placeholder="Ex.: 5, 6, 7 ou 5*"></label>
           <button class="btn primary" id="signupButton" type="submit">Confirmar inscrição</button>
         </form>
         <div class="info-chips"><span>Inscrições até 09h50</span><span>Contagem às 09h55</span><span>Primeira partida às 10h15</span></div>
@@ -91,11 +92,12 @@
 
   <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Melhor de 3 sets • Final e disputa de 3º lugar</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260721-2355"></script>
-  <script src="assets/core-data.js?v=20260721-2355"></script>
-  <script src="assets/tournament-bracket.js?v=20260721-2355"></script>
-  <script src="assets/tournament-score.js?v=20260721-2355"></script>
-  <script src="assets/tournament-api.js?v=20260721-2355"></script>
-  <script src="assets/public.js?v=20260721-2355"></script>
+  <script src="config.js?v=20260722-0815"></script>
+  <script src="assets/core-data.js?v=20260722-0815"></script>
+  <script src="assets/tournament-bracket.js?v=20260722-0815"></script>
+  <script src="assets/tournament-score.js?v=20260722-0815"></script>
+  <script src="assets/tournament-api.js?v=20260722-0815"></script>
+  <script src="assets/rating-rule-v011.js?v=20260722-0815"></script>
+  <script src="assets/public.js?v=20260722-0815"></script>
 </body>
 </html>
