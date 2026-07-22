@@ -11,12 +11,13 @@
   const saveScore = document.getElementById('saveScore');
 
   ui.drawNow.addEventListener('click', async () => {
-    if (!confirm('Iniciar a contagem regressiva pública de 10 minutos para o sorteio?')) return;
+    const seconds = Number(C.COUNTDOWN_SECONDS || 1200);
+    if (!confirm('Iniciar a contagem regressiva pública até o horário da primeira partida?')) return;
     A.busy(ui.drawNow, true, 'Iniciando contagem...');
     try {
-      await V.request('iniciarContagem', { segundos: 600 });
+      await V.request('iniciarContagem', { segundos: seconds });
       V.toast('Contagem regressiva iniciada na página pública.');
-      await A.refresh(true);
+      await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -29,7 +30,7 @@
     try {
       await V.request('resetar');
       V.toast('Sorteio reiniciado.');
-      await A.refresh(true);
+      await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
@@ -44,15 +45,13 @@
     try {
       await V.request('limparTudo');
       V.toast(local ? 'Dados locais apagados.' : 'Dados da planilha apagados.');
-      await A.refresh(true);
+      await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
   });
 
-  function value(id) {
-    return document.getElementById(id).value;
-  }
+  function value(id) { return document.getElementById(id).value; }
 
   scoreForm.addEventListener('submit', async event => {
     event.preventDefault();
@@ -67,27 +66,17 @@
       s3a: value('scoreS3A'), s3b: value('scoreS3B')
     };
 
-    try {
-      V.validateScore(score);
-    } catch (error) {
-      V.toast(error.message, 'warn');
-      return;
-    }
+    try { V.validateScore(score); }
+    catch (error) { V.toast(error.message, 'warn'); return; }
 
     if (!confirm('Confirmar o placar final desta partida?')) return;
     A.busy(saveScore, true, 'Salvando placar...');
     try {
-      const payload = [
-        'PLACAR', score.s1a, score.s1b, score.s2a,
-        score.s2b, score.s3a, score.s3b
-      ].join('|');
-      await V.request('registrarResultado', {
-        jogo: scoreGame.value,
-        vencedorId: payload
-      });
+      const payload = ['PLACAR', score.s1a, score.s1b, score.s2a, score.s2b, score.s3a, score.s3b].join('|');
+      await V.request('registrarResultado', { jogo: scoreGame.value, vencedorId: payload });
       V.toast(`Placar salvo. Intervalo de ${C.MATCH_INTERVAL_MINUTES || 10} minutos iniciado.`);
       scoreForm.reset();
-      await A.refresh(true);
+      await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -97,9 +86,7 @@
 
   ui.sheetLink.href = C.SHEET_URL || '#';
   A.preview();
-  A.refresh(true);
-  setInterval(() => A.refresh(true), 10000);
-  window.addEventListener('storage', event => {
-    if (event.key === V.KEY) A.refresh(true);
-  });
+  A.refresh();
+  setInterval(A.refresh, 10000);
+  window.addEventListener('storage', event => { if (event.key === V.KEY) A.refresh(); });
 })();
