@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Administração do Sorteio de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260721-2345">
+  <link rel="stylesheet" href="assets/style.css?v=20260721-2355">
 </head>
 <body data-page="admin">
   <header class="topbar">
@@ -37,11 +37,11 @@
         <input type="hidden" id="playerId">
         <label>Nome<input id="playerName" required maxlength="50" placeholder="Nome do participante"></label>
         <label>Idade<input id="playerAge" required type="number" min="1" max="100" step="1" placeholder="Idade em anos"></label>
-        <label>Nota de desempenho<input id="playerScore" required type="number" min="0" max="10" step="1" placeholder="0 a 10"></label>
+        <label>Como você avalia o seu jogo? (5 a 10)<input id="playerScore" required type="number" min="5" max="10" step="1" placeholder="5 a 10"></label>
         <label>Ativo<select id="playerActive"><option value="SIM">SIM</option><option value="NAO">NÃO</option></select></label>
         <button class="btn primary" type="submit">Salvar participante</button>
       </form>
-      <div class="preview" id="categoryPreview">Informe a idade e a nota. Categoria automática.</div>
+      <div class="preview" id="categoryPreview">Informe a idade e a avaliação do jogo. Categoria automática.</div>
       <div class="table-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>Idade</th><th>Categoria</th><th>Nota</th><th>Índice</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="playersTableBody"></tbody></table></div>
     </section>
 
@@ -70,15 +70,15 @@
   </main>
 
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260721-2345"></script>
-  <script src="assets/core-data.js?v=20260721-2345"></script>
-  <script src="assets/tournament-bracket.js?v=20260721-2345"></script>
-  <script src="assets/tournament-score.js?v=20260721-2345"></script>
-  <script src="assets/tournament-api.js?v=20260721-2345"></script>
-  <script src="assets/v010-compat.js?v=20260721-2345"></script>
-  <script src="assets/admin-base.js?v=20260721-2345"></script>
-  <script src="assets/admin-results.js?v=20260721-2345"></script>
-  <script src="assets/admin-actions.js?v=20260721-2345"></script>
-  <script src="assets/admin-tournament-actions.js?v=20260721-2345"></script>
+  <script src="config.js?v=20260721-2355"></script>
+  <script src="assets/core-data.js?v=20260721-2355"></script>
+  <script src="assets/tournament-bracket.js?v=20260721-2355"></script>
+  <script src="assets/tournament-score.js?v=20260721-2355"></script>
+  <script src="assets/tournament-api.js?v=20260721-2355"></script>
+  <script src="assets/v010-compat.js?v=20260721-2355"></script>
+  <script src="assets/admin-base.js?v=20260721-2355"></script>
+  <script src="assets/admin-results.js?v=20260721-2355"></script>
+  <script src="assets/admin-actions.js?v=20260721-2355"></script>
+  <script src="assets/admin-tournament-actions.js?v=20260721-2355"></script>
 </body>
 </html>
