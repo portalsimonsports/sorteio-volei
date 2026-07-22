@@ -5,32 +5,31 @@
   const A = window.VoleiAdmin;
   const V = A.V;
   const ui = A.ui;
-  let lastConnectionError = '';
+  let firstLoad = true;
 
-  async function refresh(silent = false) {
-    if (!silent) A.busy(ui.refreshAdmin, true, 'Atualizando...');
+  async function refresh() {
+    A.busy(ui.refreshAdmin, true, 'Atualizando...');
     try {
       A.render(await V.request('admin'));
-      lastConnectionError = '';
+      ui.adminMode.textContent = 'Sincronizado com Google Sheets';
     } catch (error) {
+      ui.adminMode.textContent = 'Sem conexão com Apps Script';
       A.render(V.read());
-      ui.adminMode.textContent = 'Sem conexão com o Apps Script';
-      ui.adminMode.title = error.message;
-      if (!silent || error.message !== lastConnectionError) {
-        V.toast(error.message, 'error');
-        lastConnectionError = error.message;
-      }
+      if (firstLoad) V.toast(error.message, 'error');
     } finally {
-      if (!silent) A.busy(ui.refreshAdmin, false);
+      firstLoad = false;
+      A.busy(ui.refreshAdmin, false);
     }
   }
 
   ui.playerForm.addEventListener('submit', async event => {
     event.preventDefault();
+    const playerAge = Number(ui.playerAge.value);
     const params = {
       id: ui.playerId.value,
       nome: ui.playerName.value,
-      dataNascimento: ui.playerBirth.value,
+      idade: playerAge,
+      dataNascimento: V.syntheticBirthDate(playerAge),
       nota: ui.playerScore.value,
       ativo: ui.playerActive.value
     };
@@ -50,7 +49,7 @@
       ui.playerId.value = '';
       ui.playerActive.value = 'SIM';
       A.preview();
-      await refresh(true);
+      await refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -58,7 +57,7 @@
     }
   });
 
-  ui.playerBirth.addEventListener('input', A.preview);
+  ui.playerAge.addEventListener('input', A.preview);
   ui.playerScore.addEventListener('input', A.preview);
 
   ui.playersTableBody.addEventListener('click', async event => {
@@ -70,7 +69,7 @@
     if (button.dataset.action === 'edit') {
       ui.playerId.value = player.id;
       ui.playerName.value = player.name;
-      ui.playerBirth.value = V.dateInput(player.birthDate);
+      ui.playerAge.value = player.age;
       ui.playerScore.value = player.score;
       ui.playerActive.value = player.active || 'SIM';
       A.preview();
@@ -82,12 +81,12 @@
     try {
       await V.request('excluirJogador', { id: player.id });
       V.toast('Participante excluído.');
-      await refresh(true);
+      await refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
   });
 
-  ui.refreshAdmin.addEventListener('click', () => refresh(false));
+  ui.refreshAdmin.addEventListener('click', refresh);
   A.refresh = refresh;
 })();
