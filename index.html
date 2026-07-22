@@ -4,18 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento e placares do torneio de duplas de vôlei.">
+  <meta name="description" content="Inscrição, sorteio ao vivo, chaveamento, classificação e placares do torneio de duplas de vôlei.">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Sorteio de Duplas de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260722-1105">
-  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260722-1105">
-  <link rel="stylesheet" href="assets/event-live.css?v=20260722-1105">
-  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-1105">
+  <link rel="stylesheet" href="assets/style.css?v=20260722-1610">
+  <link rel="stylesheet" href="assets/mobile-bracket-fix.css?v=20260722-1610">
+  <link rel="stylesheet" href="assets/event-live.css?v=20260722-1610">
+  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-1610">
+  <link rel="stylesheet" href="assets/final-ranking-v014.css?v=20260722-1610">
 </head>
 <body data-page="public">
   <header class="topbar public-topbar">
     <a class="brand" href="./"><span class="brand-ball">🏐</span><span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Torneio de duplas</small></span></a>
-    <nav class="public-nav" aria-label="Navegação principal"><a href="#inscricao">Inscrição</a><a href="#participantes">Participantes</a><a href="#chaveamento">Chaveamento</a></nav>
+    <nav class="public-nav" aria-label="Navegação principal"><a href="#participantes">Participantes</a><a href="#chaveamento">Chaveamento</a><a href="#classificacao">Classificação</a></nav>
     <div class="status"><span id="connectionDot" class="status-dot"></span><span id="connectionText">Carregando...</span></div>
   </header>
 
@@ -26,7 +27,7 @@
         <div class="hero-badge"><span>🏐</span> Torneio de duplas</div>
         <h1 id="eventTitle">Sorteio de Duplas de Vôlei</h1>
         <p id="eventMessage">Inscrições abertas para adultos e crianças.</p>
-        <div class="hero-actions"><a class="btn primary" href="#inscricao">Fazer inscrição</a><a class="btn ghost" href="#chaveamento">Acompanhar competição</a></div>
+        <div class="hero-actions"><a class="btn primary" href="#classificacao">Ver classificação final</a><a class="btn ghost" href="#chaveamento">Ver chaveamento</a></div>
         <div class="hero-stats" aria-label="Resumo do torneio"><article><strong id="countAHero">0</strong><span>Adultos</span></article><article><strong id="countBHero">0</strong><span>Crianças</span></article><article><strong id="countTeamsHero">0</strong><span>Duplas</span></article></div>
         <div class="audit" id="auditLine">Atualização automática</div>
       </div>
@@ -36,7 +37,7 @@
       <div class="live-event-grid">
         <article class="live-event-card live-clock-card"><span class="live-label">Data e horário em Jatobá/SP</span><strong id="liveTime">--:--:--</strong><small id="liveDate">Carregando data local...</small></article>
         <article class="live-event-card live-weather-card"><span class="live-label">Clima em Jatobá/SP</span><div class="weather-line"><span class="weather-icon" id="weatherIcon">🌤️</span><strong id="weatherTemperature">--°C</strong></div><div class="weather-details"><span id="weatherCondition">Consultando condições atuais...</span><span id="weatherWind">Vento: --</span></div></article>
-        <article class="live-event-card live-countdown-card"><span class="live-label" id="firstMatchLabel">Primeira partida • 10h50</span><strong class="first-match-countdown" id="firstMatchCountdown">--:--:--</strong><small id="firstMatchTarget">Calculando o início da primeira partida...</small></article>
+        <article class="live-event-card live-countdown-card"><span class="live-label" id="firstMatchLabel">Primeira partida</span><strong class="first-match-countdown" id="firstMatchCountdown">--:--:--</strong><small id="firstMatchTarget">Calculando o início da primeira partida...</small></article>
       </div>
     </section>
 
@@ -52,14 +53,14 @@
 
     <section class="section" id="inscricao">
       <div class="panel signup-panel">
-        <div class="section-head"><div><span class="kicker">Inscrição</span><h2>Participe do torneio</h2><p id="registrationDescription">Inscrições disponíveis até 10h45. A categoria é definida automaticamente pela idade.</p></div><span class="panel-icon">✍️</span></div>
+        <div class="section-head"><div><span class="kicker">Inscrição</span><h2>Participe do torneio</h2><p id="registrationDescription">A categoria é definida automaticamente pela idade.</p></div><span class="panel-icon">✍️</span></div>
         <form class="signup-grid" id="signupForm">
           <label>Nome<input id="signupName" maxlength="50" autocomplete="name" required placeholder="Nome do participante"></label>
           <label>Idade<input id="signupAge" type="number" min="1" max="100" step="1" required placeholder="Idade em anos"></label>
           <label>Como você avalia o seu jogo? De 5 a 10<input id="signupScore" type="text" inputmode="text" maxlength="3" required placeholder="5 a 10"></label>
           <button class="btn primary" id="signupButton" type="submit">Confirmar inscrição</button>
         </form>
-        <div class="info-chips"><span id="registrationChip">Inscrições até 10h45</span><span id="countdownChip">Contagem às 10h48</span><span id="firstMatchChip">Primeira partida às 10h50</span></div>
+        <div class="info-chips"><span id="registrationChip">Inscrições</span><span id="countdownChip">Contagem</span><span id="firstMatchChip">Primeira partida</span></div>
         <div class="message" id="signupMessage" aria-live="polite"></div>
       </div>
     </section>
@@ -84,22 +85,29 @@
     <section class="section compact" id="equipes"><div class="section-head"><div><span class="kicker">Duplas</span><h2>Equipes formadas</h2><p id="balanceSummary">As equipes serão reveladas após a contagem regressiva.</p></div></div><div class="teams" id="teamsGrid"></div></section>
 
     <section class="section compact" id="chaveamento">
-      <div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2><p>Final, disputa de terceiro lugar e resultados atualizados automaticamente.</p></div></div>
+      <div class="section-head"><div><span class="kicker">Competição</span><h2>Chaveamento e placares</h2><p>Um jogo preliminar, semifinais, final e disputa de terceiro lugar.</p></div></div>
       <div class="placement-summary" id="placementSummary" hidden><article class="placement-card champion-placement"><span>🏆 Campeã</span><strong id="championName">A definir</strong></article><article class="placement-card third-placement"><span>🥉 3º lugar</span><strong id="thirdPlaceName">A definir</strong></article></div>
       <div class="bracket-shell"><div class="bracket" id="bracket"></div></div>
     </section>
+
+    <section class="section compact" id="classificacao" hidden>
+      <div class="section-head"><div><span class="kicker">Resultado</span><h2>Classificação final</h2><p>Posição final de todas as duplas participantes.</p></div><span class="audit" id="rankingStatus"></span></div>
+      <div class="final-ranking-card"><div class="final-ranking-list" id="finalRankingRows"></div></div>
+    </section>
   </main>
 
-  <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Melhor de 3 sets • Final e disputa de 3º lugar</span></footer>
+  <footer class="footer"><span>🏐 Sorteio de Vôlei</span><span>Classificação final • 1º ao 5º lugar</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260722-1105"></script>
-  <script src="assets/core-data.js?v=20260722-1105"></script>
-  <script src="assets/tournament-bracket.js?v=20260722-1105"></script>
-  <script src="assets/draw-tiebreak-v012.js?v=20260722-1105"></script>
-  <script src="assets/tournament-score.js?v=20260722-1105"></script>
-  <script src="assets/tournament-api.js?v=20260722-1105"></script>
-  <script src="assets/rating-rule-v011.js?v=20260722-1105"></script>
-  <script src="assets/current-state-v013.js?v=20260722-1105"></script>
-  <script src="assets/public.js?v=20260722-1105"></script>
+  <script src="config.js?v=20260722-1610"></script>
+  <script src="assets/core-data.js?v=20260722-1610"></script>
+  <script src="assets/tournament-bracket.js?v=20260722-1610"></script>
+  <script src="assets/draw-tiebreak-v012.js?v=20260722-1610"></script>
+  <script src="assets/compact-bracket-v014.js?v=20260722-1610"></script>
+  <script src="assets/tournament-score.js?v=20260722-1610"></script>
+  <script src="assets/tournament-api.js?v=20260722-1610"></script>
+  <script src="assets/rating-rule-v011.js?v=20260722-1610"></script>
+  <script src="assets/current-state-v013.js?v=20260722-1610"></script>
+  <script src="assets/public.js?v=20260722-1610"></script>
+  <script src="assets/final-ranking-v014.js?v=20260722-1610"></script>
 </body>
 </html>
