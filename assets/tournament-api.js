@@ -199,8 +199,6 @@
   }
 
   async function remoteRequest(action, params = {}) {
-    // Apps Script frequentemente bloqueia fetch por CORS, mas aceita JSONP pelo doGet.
-    // Todas as operações do sistema são suportadas via query string, inclusive gravações.
     try {
       return await jsonpRequest(action, params);
     } catch (jsonpError) {
@@ -219,6 +217,29 @@
       : remoteRequest(action, params);
   }
 
+  function validatePlayer(params) {
+    const score = B.num(params?.score ?? params?.nota);
+    if (!Number.isInteger(score) || score < 5 || score > 10) {
+      throw new Error('Avalie o seu jogo com uma nota inteira de 5 a 10.');
+    }
+    return B.validatePlayer(params);
+  }
+
+  function configureRatingField() {
+    ['signupScore', 'playerScore'].forEach(id => {
+      const input = document.getElementById(id);
+      if (!input) return;
+      input.min = '5';
+      input.max = '10';
+      input.step = '1';
+      input.placeholder = '5 a 10';
+      const label = input.closest('label');
+      if (label?.firstChild?.nodeType === Node.TEXT_NODE) {
+        label.firstChild.nodeValue = 'Como você avalia o seu jogo? (5 a 10)';
+      }
+    });
+  }
+
   function toast(text, type = 'ok') {
     const wrap = document.getElementById('toastWrap');
     if (!wrap) return;
@@ -232,6 +253,7 @@
   window.Volei = {
     ...B,
     request,
+    validatePlayer,
     validateScore: S.validateScore,
     teamName: team => team
       ? ([team.member1, team.member2].filter(Boolean).join(' + ') || [team.adult, team.child].filter(Boolean).join(' + ') || team.id || '')
@@ -251,4 +273,6 @@
     index: B.adjustedIndex,
     clearAdminKey: () => localStorage.removeItem(ADMIN_KEY_STORE)
   };
+
+  configureRatingField();
 })();
