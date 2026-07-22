@@ -1,0 +1,1 @@
+.rating-help{display:block;margin-top:8px;color:var(--muted,#64748b);font-size:12px;line-height:1.45;font-weight:600}.signup-grid label:has(.rating-help),.form-grid label:has(.rating-help){align-self:start}
