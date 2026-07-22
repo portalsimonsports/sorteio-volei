@@ -35,12 +35,12 @@
     const playerAge = Number(ui.playerAge.value);
     const score = V.num(ui.playerScore.value);
     if (!Number.isInteger(playerAge) || playerAge < 1 || playerAge > 100) {
-      ui.categoryPreview.textContent = 'Informe a idade e a nota. Categoria automática.';
+      ui.categoryPreview.textContent = 'Informe a idade e a avaliação do jogo. Categoria automática.';
       return;
     }
     const category = V.category(playerAge);
-    const warning = category.pot === 'A' && score < 5 ? ' Nota mínima 5 para adultos.' : '';
-    ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label} • Nota ${V.fmt(score)} • Índice ${V.fmt(V.index(score))}.${warning}`;
+    const warning = score < 5 || score > 10 ? ' A avaliação deve estar entre 5 e 10.' : '';
+    ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label} • Avaliação ${V.fmt(score)}/10 • Índice ${V.fmt(V.index(score))}.${warning}`;
   }
 
   function addCell(row, text) { row.appendChild(element('td', '', text)); }
