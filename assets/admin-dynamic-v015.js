@@ -17,11 +17,15 @@
   const ruleMinimumLead = document.getElementById('ruleMinimumLead');
   const ruleSummary = document.getElementById('ruleSummary');
   const saveRules = document.getElementById('saveRules');
-  const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v10';
   let dirty = false;
   let initializedRules = false;
 
   if (!scoreForm || !scoreGame || !scoreSetsContainer) return;
+
+  function backendSupportsV15() {
+    if (C.DEMO_MODE || !C.API_BASE) return true;
+    return /V015/i.test(String(A.getState()?.version || ''));
+  }
 
   function normalizedRules(source = {}) {
     const bestOfRaw = Number(source.bestOf ?? source.melhorDe ?? C.BEST_OF_SETS ?? 3);
@@ -56,6 +60,17 @@
     ruleSummary.textContent = `Melhor de ${rules.bestOf} • ${rules.setsToWin} set${rules.setsToWin === 1 ? '' : 's'} para vencer • sets normais a ${rules.normalSetPoints}${last} • vantagem mínima de ${rules.minimumLead}.`;
   }
 
+  function updateBackendAvailability() {
+    const supported = backendSupportsV15();
+    if (saveRules) {
+      saveRules.disabled = !supported;
+      saveRules.title = supported ? '' : 'Publique o Apps Script V015 para habilitar esta configuração.';
+    }
+    if (!supported && ruleSummary) {
+      ruleSummary.textContent = 'O painel já está atualizado. Publique o Apps Script V015 para alterar sets e pontuação.';
+    }
+  }
+
   function fillRules(state) {
     if (!rulesForm || initializedRules && document.activeElement?.closest('#rulesForm')) return;
     const rules = normalizedRules(state?.rules || {});
@@ -65,6 +80,7 @@
     if (ruleMinimumLead) ruleMinimumLead.value = String(rules.minimumLead);
     updateRuleSummary(rules);
     initializedRules = true;
+    updateBackendAvailability();
   }
 
   function selectedMatch() {
@@ -91,7 +107,9 @@
         const label = document.createElement('label');
         label.textContent = `Equipe ${side + 1}`;
         const input = document.createElement('input');
-        input.type = 'number'; input.min = '0'; input.step = '1';
+        input.type = 'number';
+        input.min = '0';
+        input.step = '1';
         input.inputMode = 'numeric';
         input.dataset.scoreSet = String(index);
         input.dataset.scoreSide = String(side);
@@ -107,8 +125,14 @@
 
   function updateMatchButtons(match = selectedMatch()) {
     if (!startMatch) return;
+    const supported = backendSupportsV15();
     const selectable = Boolean(match && A.canSelectMatch?.(match));
-    startMatch.disabled = !selectable || String(match?.status || '').toUpperCase() === 'FINALIZADO';
+    startMatch.disabled = !supported || !selectable || String(match?.status || '').toUpperCase() === 'FINALIZADO';
+    if (!supported) {
+      startMatch.textContent = 'Publique o Apps Script V015 para registrar o início';
+      startMatch.classList.remove('match-started');
+      return;
+    }
     if (match?.startedAt) {
       startMatch.textContent = `Iniciada às ${V.dateTime(match.startedAt, true)}`;
       startMatch.classList.add('match-started');
@@ -126,17 +150,18 @@
     }));
   }
 
-  function withAdminKey(params = {}) {
-    const key = String(localStorage.getItem(ADMIN_KEY_STORE) || '').trim();
-    if (!key && !C.DEMO_MODE) throw new Error('A chave administrativa ainda não foi informada. Atualize o painel e informe a chave.');
-    return key ? { ...params, chave: key } : params;
-  }
-
   async function requestAdmin(action, params = {}) {
     if (C.DEMO_MODE || !C.API_BASE) {
       const state = V.read();
       if (action === 'salvarRegras') {
-        state.rules = { ...(state.rules || {}), ...params };
+        state.rules = {
+          ...(state.rules || {}),
+          bestOf: Number(params.melhorDe),
+          setsToWin: Math.floor(Number(params.melhorDe) / 2) + 1,
+          normalSetPoints: Number(params.pontosNormal),
+          tiebreakSetPoints: Number(params.pontosDesempate),
+          minimumLead: Number(params.vantagemMinima)
+        };
         VoleiBase.saveState(state);
         return { message: 'Configuração salva.', state };
       }
@@ -149,13 +174,19 @@
         return { message: 'Início registrado.', state };
       }
     }
-    return V.request(action, withAdminKey(params));
+    return V.request(action, params);
   }
 
   if (rulesForm) {
-    ['change', 'input'].forEach(type => rulesForm.addEventListener(type, () => updateRuleSummary(formRules())));
+    ['change', 'input'].forEach(type => rulesForm.addEventListener(type, () => {
+      if (backendSupportsV15()) updateRuleSummary(formRules());
+    }));
     rulesForm.addEventListener('submit', async event => {
       event.preventDefault();
+      if (!backendSupportsV15()) {
+        V.toast('Publique o Apps Script V015 antes de alterar sets e pontuação.', 'warn');
+        return;
+      }
       const rules = formRules();
       A.busy(saveRules, true, 'Salvando regras...');
       try {
@@ -178,8 +209,15 @@
 
   if (startMatch) {
     startMatch.addEventListener('click', async () => {
+      if (!backendSupportsV15()) {
+        V.toast('Publique o Apps Script V015 para registrar o horário de início.', 'warn');
+        return;
+      }
       const match = selectedMatch();
-      if (!match) { V.toast('Selecione uma partida liberada.', 'warn'); return; }
+      if (!match) {
+        V.toast('Selecione uma partida liberada.', 'warn');
+        return;
+      }
       A.busy(startMatch, true, 'Registrando início...');
       try {
         const result = await requestAdmin('iniciarPartida', { jogo: match.game });
@@ -197,15 +235,30 @@
     event.preventDefault();
     event.stopImmediatePropagation();
     const match = selectedMatch();
-    if (!match || !A.canSelectMatch?.(match)) { V.toast('Selecione uma partida liberada.', 'warn'); return; }
+    if (!match || !A.canSelectMatch?.(match)) {
+      V.toast('Selecione uma partida liberada.', 'warn');
+      return;
+    }
     const rules = currentRules();
     const scores = readScores();
-    try { V.validateScore({ scores }, rules); }
-    catch (error) { V.toast(error.message, 'warn'); return; }
+    try {
+      V.validateScore({ scores }, rules);
+    } catch (error) {
+      V.toast(error.message, 'warn');
+      return;
+    }
     if (!confirm('Confirmar o placar final desta partida?')) return;
     A.busy(saveScore, true, 'Salvando placar...');
     try {
-      const result = await V.request('registrarResultado', withAdminKey({ jogo: match.game, payload: JSON.stringify({ scores }) }));
+      let params;
+      if (backendSupportsV15()) {
+        params = { jogo: match.game, payload: JSON.stringify({ scores }) };
+      } else {
+        if (rules.bestOf !== 3) throw new Error('O backend atual aceita somente melhor de 3. Publique o Apps Script V015 para usar outro formato.');
+        const legacy = scores.slice(0, 3).flat().map(value => value ?? '');
+        params = { jogo: match.game, vencedorId: ['PLACAR', ...legacy].join('|') };
+      }
+      const result = await V.request('registrarResultado', params);
       dirty = false;
       V.toast(`Placar salvo. Intervalo de ${rules.matchIntervalMinutes} minutos iniciado.`);
       if (result?.state) A.render(result.state); else await A.refresh();
@@ -216,7 +269,10 @@
     }
   }, true);
 
-  scoreGame.addEventListener('change', () => { dirty = false; renderScoreFields(true); });
+  scoreGame.addEventListener('change', () => {
+    dirty = false;
+    renderScoreFields(true);
+  });
 
   const originalRenderMatches = A.renderMatches;
   A.renderMatches = rounds => {
