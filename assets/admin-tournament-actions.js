@@ -17,9 +17,9 @@
     if (!confirm('Iniciar a contagem regressiva pública até o horário da primeira partida?')) return;
     A.busy(ui.drawNow, true, 'Iniciando contagem...');
     try {
-      await V.request('iniciarContagem', { segundos: seconds });
+      const result = await V.request('iniciarContagem', { segundos: seconds });
       V.toast('Contagem regressiva iniciada na página pública.');
-      await A.refresh();
+      if (result?.state) A.render(result.state); else await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -30,9 +30,9 @@
   ui.resetDraw.addEventListener('click', async () => {
     if (!confirm('Reiniciar o sorteio mantendo os inscritos?')) return;
     try {
-      await V.request('resetar');
+      const result = await V.request('resetar');
       V.toast('Sorteio reiniciado.');
-      await A.refresh();
+      if (result?.state) A.render(result.state); else await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
@@ -45,9 +45,9 @@
       : 'Apagar definitivamente participantes, equipes, placares e histórico da planilha?';
     if (!confirm(text)) return;
     try {
-      await V.request('limparTudo');
+      const result = await V.request('limparTudo');
       V.toast(local ? 'Dados locais apagados.' : 'Dados da planilha apagados.');
-      await A.refresh();
+      if (result?.state) A.render(result.state); else await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
@@ -59,9 +59,14 @@
     event.preventDefault();
     event.stopPropagation();
 
-    if (!scoreGame.value) {
+    const match = A.selectedMatch?.();
+    if (!scoreGame.value || !match) {
       V.toast('Selecione uma partida liberada.', 'warn');
       scoreGame.focus();
+      return;
+    }
+    if (A.canSelectMatch && !A.canSelectMatch(match)) {
+      V.toast('Esta partida ainda não foi liberada.', 'warn');
       return;
     }
 
@@ -88,11 +93,11 @@
     const game = scoreGame.value;
     try {
       const payload = ['PLACAR', score.s1a, score.s1b, score.s2a, score.s2b, score.s3a, score.s3b].join('|');
-      await V.request('registrarResultado', { jogo: game, vencedorId: payload });
+      const result = await V.request('registrarResultado', { jogo: game, vencedorId: payload });
       A.clearScoreDraft?.(game);
       scoreForm.reset();
       V.toast(`Placar salvo. Intervalo de ${C.MATCH_INTERVAL_MINUTES || 10} minutos iniciado.`);
-      await A.refresh();
+      if (result?.state) A.render(result.state); else await A.refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
