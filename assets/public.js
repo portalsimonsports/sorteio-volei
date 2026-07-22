@@ -5,8 +5,13 @@
   const V = window.Volei;
   const C = V.C;
   const ui = {};
+  const THIRD_PLACE_PHASE = 'DISPUTA DE 3º LUGAR';
+  const EVENT_TIMEZONE = C.EVENT_TIMEZONE || 'America/Sao_Paulo';
+  const FIRST_MATCH_TIME = String(C.FIRST_MATCH_TIME || '10:15');
   let current = null;
   let countdownTimer = null;
+  let liveTimer = null;
+  let weatherTimer = null;
 
   [
     'connectionDot','connectionText','eventTitle','eventMessage','auditLine',
@@ -14,7 +19,9 @@
     'potAList','potBList','teamsGrid','balanceSummary','bracket',
     'signupForm','signupName','signupBirth','signupScore','signupButton','signupMessage',
     'countdownStage','countdownClock','countdownMessage','countdownProgress',
-    'placementSummary','championName','thirdPlaceName'
+    'placementSummary','championName','thirdPlaceName',
+    'liveTime','liveDate','weatherIcon','weatherTemperature','weatherCondition','weatherWind',
+    'firstMatchCountdown','firstMatchTarget'
   ].forEach(id => ui[id] = document.getElementById(id));
 
   function connection(mode, text) {
@@ -64,7 +71,7 @@
 
   function phaseClass(match) {
     const phase = String(match.phase || '').toUpperCase();
-    if (phase === 'DISPUTA DE 3º LUGAR') return 'third-place-match';
+    if (phase === THIRD_PLACE_PHASE) return 'third-place-match';
     if (phase === 'FINAL') return 'final-match';
     if (match.status === 'BYE') return 'bye-match';
     return '';
@@ -78,14 +85,60 @@
     return placeholder || 'A definir';
   }
 
+  function loserOf(match) {
+    if (!match?.winnerId || !match.team1 || !match.team2) return null;
+    return match.team1.id === match.winnerId ? match.team2 : match.team1;
+  }
+
+  function ensureThirdPlaceRound(rounds) {
+    const normalized = (rounds || []).map(round => ({ ...round, matches: [...(round.matches || [])] }));
+    const all = normalized.flatMap(round => round.matches);
+    if (all.some(match => String(match.phase || '').toUpperCase() === THIRD_PLACE_PHASE)) return normalized;
+
+    const semifinals = all
+      .filter(match => String(match.phase || '').toUpperCase() === 'SEMIFINAL')
+      .sort((a, b) => Number(a.game) - Number(b.game));
+    if (semifinals.length < 2) return normalized;
+
+    let decisions = normalized.find(round => round.matches.some(match => String(match.phase || '').toUpperCase() === 'FINAL'));
+    if (!decisions) {
+      decisions = { index: normalized.length, name: 'DECISÕES', matches: [] };
+      normalized.push(decisions);
+    } else {
+      decisions.name = 'DECISÕES';
+    }
+
+    const synthetic = {
+      game: Math.max(0, ...all.map(match => Number(match.game) || 0)) + 1,
+      roundIndex: Number(decisions.index || normalized.length - 1),
+      phase: THIRD_PLACE_PHASE,
+      team1: loserOf(semifinals[0]),
+      team2: loserOf(semifinals[1]),
+      team1Placeholder: `Perdedor Jogo ${semifinals[0].game}`,
+      team2Placeholder: `Perdedor Jogo ${semifinals[1].game}`,
+      scores: [[null, null], [null, null], [null, null]],
+      sets1: 0,
+      sets2: 0,
+      winnerId: '',
+      status: 'AGUARDANDO',
+      finishedAt: '',
+      availableAt: '',
+      nextGame: 0,
+      nextSlot: 0
+    };
+    V.match(synthetic);
+    decisions.matches.push(synthetic);
+    return normalized;
+  }
+
   function renderPlacements(rounds) {
     const matches = rounds.flatMap(round => round.matches);
     const final = matches.find(match => String(match.phase || '').toUpperCase() === 'FINAL');
-    const third = matches.find(match => String(match.phase || '').toUpperCase() === 'DISPUTA DE 3º LUGAR');
+    const third = matches.find(match => String(match.phase || '').toUpperCase() === THIRD_PLACE_PHASE);
     const champion = final ? V.winner(final) : null;
     const thirdPlaced = third ? V.winner(third) : null;
 
-    if (!champion && !thirdPlaced) {
+    if (!final && !third) {
       ui.placementSummary.hidden = true;
       return;
     }
@@ -95,10 +148,11 @@
     ui.thirdPlaceName.textContent = thirdPlaced ? V.teamName(thirdPlaced) : 'A definir';
   }
 
-  function bracket(rounds) {
+  function bracket(sourceRounds) {
+    const rounds = ensureThirdPlaceRound(sourceRounds);
     ui.bracket.innerHTML = rounds.length
       ? rounds.map(round => {
-        const decisions = round.matches.some(match => ['FINAL', 'DISPUTA DE 3º LUGAR'].includes(String(match.phase || '').toUpperCase()));
+        const decisions = round.matches.some(match => ['FINAL', THIRD_PLACE_PHASE].includes(String(match.phase || '').toUpperCase()));
         return `
         <section class="round ${decisions ? 'decisions-round' : ''}">
           <h3>${V.esc(round.name)}</h3>
@@ -108,7 +162,7 @@
               const teamA = displayTeam(match, 1);
               const teamB = displayTeam(match, 2);
               const phase = String(match.phase || round.name).toUpperCase();
-              const phaseLabel = phase === 'DISPUTA DE 3º LUGAR' ? '🥉 DISPUTA DE 3º LUGAR' : phase === 'FINAL' ? '🏆 FINAL' : phase;
+              const phaseLabel = phase === THIRD_PLACE_PHASE ? '🥉 DISPUTA DE 3º LUGAR' : phase === 'FINAL' ? '🏆 FINAL' : phase;
               return `<article class="match card ${phaseClass(match)}">
                 <div class="match-top"><span>Jogo ${V.esc(match.game)}</span><span>${V.esc(phaseLabel)}</span></div>
                 <div class="score-head"><span>Dupla</span><b>1º</b><b>2º</b><b>3º</b><b>Sets</b></div>
@@ -161,6 +215,118 @@
     if (countdownTimer) clearInterval(countdownTimer);
     update();
     countdownTimer = setInterval(update, 1000);
+  }
+
+  function zonedParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: EVENT_TIMEZONE,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).formatToParts(date);
+    return Object.fromEntries(parts.filter(part => part.type !== 'literal').map(part => [part.type, part.value]));
+  }
+
+  function zonedDate(year, month, day, hour, minute) {
+    const utcGuess = Date.UTC(year, month - 1, day, hour, minute, 0);
+    const guessedParts = zonedParts(new Date(utcGuess));
+    const representedUtc = Date.UTC(
+      Number(guessedParts.year), Number(guessedParts.month) - 1, Number(guessedParts.day),
+      Number(guessedParts.hour), Number(guessedParts.minute), Number(guessedParts.second)
+    );
+    return new Date(utcGuess - (representedUtc - utcGuess));
+  }
+
+  function nextFirstMatch(now = new Date()) {
+    const parts = zonedParts(now);
+    const [hour, minute] = FIRST_MATCH_TIME.split(':').map(Number);
+    let target = zonedDate(Number(parts.year), Number(parts.month), Number(parts.day), hour, minute);
+    if (target.getTime() <= now.getTime()) {
+      const tomorrow = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day) + 1));
+      target = zonedDate(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth() + 1, tomorrow.getUTCDate(), hour, minute);
+    }
+    return target;
+  }
+
+  function updateLiveInformation() {
+    const now = new Date();
+    ui.liveTime.textContent = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: EVENT_TIMEZONE,
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false
+    }).format(now);
+    ui.liveDate.textContent = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: EVENT_TIMEZONE,
+      weekday: 'long', day: '2-digit', month: 'long', year: 'numeric'
+    }).format(now);
+
+    const target = nextFirstMatch(now);
+    const seconds = Math.max(0, Math.floor((target.getTime() - now.getTime()) / 1000));
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    ui.firstMatchCountdown.textContent = `${days ? String(days).padStart(2, '0') + 'd ' : ''}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    ui.firstMatchTarget.textContent = `Início previsto: ${new Intl.DateTimeFormat('pt-BR', {
+      timeZone: EVENT_TIMEZONE,
+      weekday: 'long', day: '2-digit', month: '2-digit',
+      hour: '2-digit', minute: '2-digit'
+    }).format(target)}`;
+  }
+
+  function windDirection(degrees) {
+    const points = ['N','NNE','NE','ENE','L','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+    const normalized = ((Number(degrees) % 360) + 360) % 360;
+    return points[Math.round(normalized / 22.5) % 16];
+  }
+
+  function weatherDescription(code) {
+    const map = {
+      0: ['Céu limpo', '☀️'],
+      1: ['Predominantemente limpo', '🌤️'],
+      2: ['Parcialmente nublado', '⛅'],
+      3: ['Nublado', '☁️'],
+      45: ['Neblina', '🌫️'], 48: ['Neblina com geada', '🌫️'],
+      51: ['Garoa fraca', '🌦️'], 53: ['Garoa moderada', '🌦️'], 55: ['Garoa intensa', '🌧️'],
+      61: ['Chuva fraca', '🌦️'], 63: ['Chuva moderada', '🌧️'], 65: ['Chuva forte', '🌧️'],
+      80: ['Pancadas fracas', '🌦️'], 81: ['Pancadas moderadas', '🌧️'], 82: ['Pancadas fortes', '⛈️'],
+      95: ['Trovoadas', '⛈️'], 96: ['Trovoadas com granizo', '⛈️'], 99: ['Trovoadas fortes com granizo', '⛈️']
+    };
+    return map[Number(code)] || ['Condição variável', '🌤️'];
+  }
+
+  async function updateWeather() {
+    const latitude = Number(C.WEATHER_LATITUDE);
+    const longitude = Number(C.WEATHER_LONGITUDE);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
+    try {
+      const url = new URL('https://api.open-meteo.com/v1/forecast');
+      url.searchParams.set('latitude', latitude);
+      url.searchParams.set('longitude', longitude);
+      url.searchParams.set('current', 'temperature_2m,weather_code,wind_speed_10m,wind_direction_10m');
+      url.searchParams.set('timezone', EVENT_TIMEZONE);
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) throw new Error('Falha ao consultar o clima.');
+      const data = await response.json();
+      const weather = data.current || {};
+      const [description, icon] = weatherDescription(weather.weather_code);
+      ui.weatherIcon.textContent = icon;
+      ui.weatherTemperature.textContent = `${Math.round(Number(weather.temperature_2m))}°C`;
+      ui.weatherCondition.textContent = description;
+      ui.weatherWind.textContent = `Vento: ${Math.round(Number(weather.wind_speed_10m))} km/h • ${windDirection(weather.wind_direction_10m)} (${Math.round(Number(weather.wind_direction_10m))}°)`;
+    } catch (error) {
+      ui.weatherCondition.textContent = 'Clima temporariamente indisponível';
+      ui.weatherWind.textContent = 'Nova tentativa automática em alguns minutos';
+    }
+  }
+
+  function startLiveServices() {
+    if (liveTimer) clearInterval(liveTimer);
+    if (weatherTimer) clearInterval(weatherTimer);
+    updateLiveInformation();
+    updateWeather();
+    liveTimer = setInterval(updateLiveInformation, 1000);
+    weatherTimer = setInterval(updateWeather, 10 * 60 * 1000);
   }
 
   function render(state) {
@@ -236,6 +402,7 @@
     }
   });
 
+  startLiveServices();
   refresh();
   setInterval(refresh, Number(C.POLL_INTERVAL_MS || 5000));
   window.addEventListener('storage', event => {
