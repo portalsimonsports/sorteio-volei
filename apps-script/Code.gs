@@ -1,9 +1,9 @@
-/** SORTEIO DE DUPLAS DE VÔLEI — V015 */
+/** SORTEIO DE DUPLAS DE VÔLEI — V016 */
 const VOLEI=Object.freeze({
- VERSION:'V015_SETS_PONTOS_HORARIO_REAL_CHAVEAMENTO_7_2026-07-22',
+ VERSION:'V016_EDICOES_HISTORICO_NOVO_CHAVEAMENTO_2026-07-22',
  SPREADSHEET_ID:'1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',TIMEZONE:'America/Sao_Paulo',
  SITE_URL:'https://portalsimonsports.github.io/sorteio-volei/',ADMIN_URL:'https://portalsimonsports.github.io/sorteio-volei/admin.html',
- SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS'}),
+ SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS',CAMPEONATOS:'CAMPEONATOS',HISTORICO_EQUIPES:'HISTORICO_EQUIPES',HISTORICO_CHAVEAMENTO:'HISTORICO_CHAVEAMENTO'}),
  HEADERS:Object.freeze({
   JOGADORES:['ID','NOME','DATA_NASCIMENTO','IDADE','POTE','CATEGORIA','NOTA_DESEMPENHO','NOTA_AJUSTADA','ATIVO','DATA_CADASTRO','OBSERVAÇÃO'],
   EQUIPES:['EQUIPE_ID','ADULTO_ID','ADULTO','NOTA_ADULTO','INDICE_ADULTO','CRIANCA_ID','CRIANCA','NOTA_CRIANCA','INDICE_CRIANCA','INDICE_TOTAL','ORDEM_BALANCEAMENTO','ORDEM_CHAVEAMENTO'],
@@ -25,6 +25,10 @@ function executarApi_(p){try{const a=texto_(p.acao||'estado');let d;switch(a){
  case'salvarRegras':exigirAdmin_(p.chave);d=salvarRegrasPartida_(p);break;
  case'iniciarPartida':exigirAdmin_(p.chave);d=iniciarPartida_(p.jogo);break;
  case'registrarResultado':exigirAdmin_(p.chave);d=registrarResultado_(p.jogo,p.payload||p.vencedorId);break;
+ case'listarCampeonatos':exigirAdmin_(p.chave);d=listarCampeonatos_();break;
+ case'novoCampeonato':exigirAdmin_(p.chave);d=novoCampeonato_(p);break;
+ case'abrirCampeonato':exigirAdmin_(p.chave);d=abrirCampeonato_(p.id);break;
+ case'arquivarCampeonato':exigirAdmin_(p.chave);d=arquivarCampeonatoAtual_(p.nome||'',true);break;
  case'resetar':exigirAdmin_(p.chave);d=resetarSorteio_();break;case'limparTudo':exigirAdmin_(p.chave);d=limparTudo_();break;
  case'diagnostico':exigirAdmin_(p.chave);d=DIAGNOSTICO_SISTEMA();break;default:throw Error('Ação inválida: '+a);}
  return responder_({ok:true,dados:d,versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}}
@@ -45,7 +49,7 @@ function hashCodigo_(c){return hash_((props_().getProperty('ACTIVATION_SALT')||'
 function obterChaveAdmin_(){const p=props_(),config=obterConfig_();let chave=texto_(config.ADMIN_KEY)||texto_(p.getProperty('ADMIN_KEY'));if(!chave){chave=Utilities.getUuid().replace(/-/g,'').slice(0,24);definirConfig_('ADMIN_KEY',chave,'Chave administrativa do painel');}if(texto_(p.getProperty('ADMIN_KEY'))!==chave)p.setProperty('ADMIN_KEY',chave);return chave;}
 function exigirAdmin_(c){const e=obterChaveAdmin_();if(!c||!compararSeguro_(c,e))throw Error('Chave administrativa inválida.');}
 function garantirAba_(n,h){const arq=ss_();let s=arq.getSheetByName(n);if(!s)s=arq.insertSheet(n);if(s.getMaxColumns()<h.length)s.insertColumnsAfter(s.getMaxColumns(),h.length-s.getMaxColumns());s.getRange(1,1,1,h.length).setValues([h]);s.setFrozenRows(1);return s;}
-function garantirEstrutura_(){garantirAba_(VOLEI.SHEETS.JOGADORES,VOLEI.HEADERS.JOGADORES);garantirAba_(VOLEI.SHEETS.EQUIPES,VOLEI.HEADERS.EQUIPES);garantirAba_(VOLEI.SHEETS.CHAVEAMENTO,VOLEI.HEADERS.CHAVEAMENTO);garantirAba_(VOLEI.SHEETS.SORTEIOS,VOLEI.HEADERS.SORTEIOS);garantirAba_(VOLEI.SHEETS.LOG,VOLEI.HEADERS.LOG);garantirAba_(VOLEI.SHEETS.LISTAS,VOLEI.HEADERS.LISTAS);return true;}
+function garantirEstrutura_(){garantirAba_(VOLEI.SHEETS.JOGADORES,VOLEI.HEADERS.JOGADORES);garantirAba_(VOLEI.SHEETS.EQUIPES,VOLEI.HEADERS.EQUIPES);garantirAba_(VOLEI.SHEETS.CHAVEAMENTO,VOLEI.HEADERS.CHAVEAMENTO);garantirAba_(VOLEI.SHEETS.SORTEIOS,VOLEI.HEADERS.SORTEIOS);garantirAba_(VOLEI.SHEETS.LOG,VOLEI.HEADERS.LOG);garantirAba_(VOLEI.SHEETS.LISTAS,VOLEI.HEADERS.LISTAS);garantirEstruturaCampeonatos_();return true;}
 function limparAbaixoCabecalho_(n,c){const s=aba_(n),l=s.getLastRow();if(l>1)s.getRange(2,1,l-1,Math.min(c,s.getMaxColumns())).clearContent();}
 function obterConfig_(){const s=aba_(VOLEI.SHEETS.CONFIG),l=s.getLastRow(),c={};if(l>=5)s.getRange(5,1,l-4,2).getValues().forEach(r=>{if(r[0])c[texto_(r[0])]=r[1];});return c;}
 function definirConfig_(k,v,d){const s=aba_(VOLEI.SHEETS.CONFIG),l=Math.max(5,s.getLastRow()),a=l>=5?s.getRange(5,1,l-4,1).getDisplayValues():[];let r=0;for(let i=0;i<a.length;i++)if(texto_(a[i][0])===k){r=i+5;break;}if(!r)r=Math.max(5,s.getLastRow()+1);s.getRange(r,1,1,3).setValues([[k,v,d||'']]);}
