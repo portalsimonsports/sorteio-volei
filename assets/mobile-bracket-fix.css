@@ -1,4 +1,111 @@
-/* Correção do chaveamento em telas móveis */
+/* Ajustes visuais do chaveamento, pódio e telas móveis */
+#chaveamento .score-head,
+#chaveamento .score-row {
+  grid-template-columns: minmax(0, 1fr) repeat(4, 38px);
+  column-gap: 6px;
+  align-items: center;
+}
+
+#chaveamento .score-head > span,
+#chaveamento .score-row > span {
+  min-width: 0;
+  text-align: left;
+}
+
+#chaveamento .score-head > b,
+#chaveamento .score-row > b,
+#chaveamento .score-row > strong {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  justify-self: stretch;
+}
+
+#chaveamento .score-head > b {
+  font-variant-numeric: tabular-nums;
+}
+
+#chaveamento .third-place-match {
+  border-color: #e8b86a;
+  background: linear-gradient(145deg, #fffdf8, #fff7e7);
+  box-shadow: 0 18px 48px rgba(146, 64, 14, .14);
+}
+
+#chaveamento .third-place-match .match-top span:last-child {
+  color: #92400e;
+  font-weight: 1000;
+}
+
+#chaveamento .final-match {
+  border-color: #e2b93b;
+  background: linear-gradient(145deg, #fffef7, #fff9d9);
+  box-shadow: 0 20px 54px rgba(161, 98, 7, .16);
+}
+
+#chaveamento .final-match .match-top span:last-child {
+  color: #854d0e;
+  font-weight: 1000;
+}
+
+#chaveamento .bye-match {
+  border-style: dashed;
+  opacity: .9;
+}
+
+.placement-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 24px;
+}
+
+.placement-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid #dbe4ef;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, .1);
+}
+
+.placement-card span {
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.placement-card strong {
+  overflow: hidden;
+  color: #0f172a;
+  font-size: clamp(18px, 3vw, 27px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.champion-placement {
+  border-color: #e7c44e;
+  background: linear-gradient(145deg, #fffef4, #fff7c7);
+}
+
+.champion-placement span {
+  color: #854d0e;
+}
+
+.third-placement {
+  border-color: #e8b86a;
+  background: linear-gradient(145deg, #fffdf8, #ffedd5);
+}
+
+.third-placement span {
+  color: #9a3412;
+}
+
 @media (max-width: 700px) {
   #chaveamento {
     overflow: visible;
@@ -37,6 +144,10 @@
     transform: none !important;
   }
 
+  #chaveamento .decisions-round > h3 {
+    background: linear-gradient(135deg, #111827, #713f12);
+  }
+
   #chaveamento .matches {
     display: grid;
     gap: 16px;
@@ -62,13 +173,40 @@
 
   #chaveamento .score-head,
   #chaveamento .score-row {
-    grid-template-columns: minmax(0, 1fr) repeat(4, 30px);
+    grid-template-columns: minmax(0, 1fr) repeat(4, 34px);
+    column-gap: 4px;
   }
 
-  #chaveamento .score-row span {
-    min-width: 0;
+  #chaveamento .score-head > span {
+    padding-left: 4px;
+  }
+
+  #chaveamento .score-row > span {
     overflow: hidden;
+    padding-right: 5px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .placement-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .placement-card {
+    padding: 16px 18px;
+  }
+}
+
+@media (max-width: 390px) {
+  #chaveamento .score-head,
+  #chaveamento .score-row {
+    grid-template-columns: minmax(0, 1fr) repeat(4, 30px);
+    column-gap: 2px;
+  }
+
+  #chaveamento .score-head > b,
+  #chaveamento .score-row > b,
+  #chaveamento .score-row > strong {
+    font-size: 10px;
   }
 }
