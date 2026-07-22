@@ -10,12 +10,20 @@
   async function refresh() {
     A.busy(ui.refreshAdmin, true, 'Atualizando...');
     try {
-      A.render(await V.request('admin'));
+      const adminState = await V.request('admin');
+      A.render(adminState);
       ui.adminMode.textContent = 'Sincronizado com Google Sheets';
-    } catch (error) {
-      ui.adminMode.textContent = 'Sem conexão com Apps Script';
-      A.render(V.read());
-      if (firstLoad) V.toast(error.message, 'error');
+    } catch (adminError) {
+      try {
+        const publicState = await V.request('estado');
+        A.render(publicState);
+        ui.adminMode.textContent = 'Chaveamento sincronizado';
+        if (firstLoad) V.toast('O painel carregou o chaveamento pela consulta pública.', 'warn');
+      } catch (publicError) {
+        ui.adminMode.textContent = 'Sem conexão com Apps Script';
+        A.render(V.read());
+        if (firstLoad) V.toast(publicError.message || adminError.message, 'error');
+      }
     } finally {
       firstLoad = false;
       A.busy(ui.refreshAdmin, false);
@@ -45,7 +53,7 @@
     const button = ui.playerForm.querySelector('button[type="submit"]');
     A.busy(button, true, 'Salvando...');
     try {
-      await V.request('salvarJogador', params);
+      const result = await V.request('salvarJogador', params);
       V.toast('Participante salvo.');
       ui.playerForm.reset();
       ui.playerId.value = '';
@@ -53,7 +61,7 @@
       delete ui.playerScore.dataset.originalScore;
       delete ui.playerScore.dataset.originalAdjusted;
       A.preview();
-      await refresh();
+      if (result?.state) A.render(result.state); else await refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -85,9 +93,9 @@
 
     if (!confirm(`Excluir ${player.name}?`)) return;
     try {
-      await V.request('excluirJogador', { id: player.id });
+      const result = await V.request('excluirJogador', { id: player.id });
       V.toast('Participante excluído.');
-      await refresh();
+      if (result?.state) A.render(result.state); else await refresh();
     } catch (error) {
       V.toast(error.message, 'error');
     }
