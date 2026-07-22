@@ -1,8 +1,15 @@
 /** Formação e leitura das duplas */
 function formarEquipes_(){
  const p=validarPotes_();
- const adultos=p.adults.sort((x,y)=>y.adjustedScore-x.adjustedScore||x.name.localeCompare(y.name));
- const criancas=p.children.sort((x,y)=>x.adjustedScore-y.adjustedScore||x.name.localeCompare(y.name));
+ const adultos=p.adults.sort((x,y)=>
+  y.adjustedScore-x.adjustedScore||
+  numero_(x.age)-numero_(y.age)||
+  x.name.localeCompare(y.name)
+ );
+ const criancas=p.children.sort((x,y)=>
+  x.adjustedScore-y.adjustedScore||
+  x.name.localeCompare(y.name)
+ );
  return adultos.map((adulto,i)=>{const crianca=criancas[i];return{
   id:'E-'+('000'+(i+1)).slice(-3),adultId:adulto.id,adult:adulto.name,adultScore:adulto.score,adultIndex:adulto.adjustedScore,
   childId:crianca.id,child:crianca.name,childScore:crianca.score,childIndex:crianca.adjustedScore,
