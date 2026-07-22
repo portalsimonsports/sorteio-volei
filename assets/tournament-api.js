@@ -13,6 +13,7 @@
     'gerarCodigo', 'cancelar', 'registrarResultado', 'resetar',
     'limparTudo', 'diagnostico'
   ]);
+  const READ_ACTIONS = new Set(['estado', 'admin', 'diagnostico']);
 
   try {
     const informed = new URLSearchParams(location.search).get('chave');
@@ -91,7 +92,69 @@
     return data;
   }
 
-  function remoteRequest(action, params = {}, retryingKey = false) {
+  function buildQuery(action, params = {}, retryingKey = false) {
+    const query = new URLSearchParams({ ...params, acao: action, _: Date.now() });
+    if (ADMIN_ACTIONS.has(action)) query.set('chave', adminKey(retryingKey));
+    return query;
+  }
+
+  function decodePayload(text) {
+    const source = String(text || '').replace(/^\uFEFF/, '').trim();
+    if (!source) throw new Error('O Apps Script respondeu sem conteúdo.');
+    if (source.startsWith('<')) {
+      throw new Error('A implantação exige login ou não está liberada para acesso público.');
+    }
+    try {
+      return JSON.parse(source);
+    } catch (_) {
+      const wrapped = source.match(/^[A-Za-z_$][0-9A-Za-z_$.]*\((.*)\);?$/s);
+      if (wrapped) return JSON.parse(wrapped[1]);
+      throw new Error('O Apps Script devolveu uma resposta inválida.');
+    }
+  }
+
+  function processResponse(action, response, retryingKey, retryFunction) {
+    if (!response || response.ok !== true) {
+      const message = response?.erro || 'Falha na comunicação com o Apps Script.';
+      if (ADMIN_ACTIONS.has(action) && !retryingKey && /chave administrativa/i.test(message)) {
+        localStorage.removeItem(ADMIN_KEY_STORE);
+        return retryFunction(true);
+      }
+      throw new Error(message);
+    }
+    return normalizeResult(action, response.dados);
+  }
+
+  async function fetchRequest(action, params = {}, retryingKey = false) {
+    const endpoint = String(C.API_BASE || '').trim();
+    if (!endpoint) throw new Error('A URL do Apps Script ainda não foi configurada.');
+
+    const query = buildQuery(action, params, retryingKey);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 18000);
+
+    try {
+      const response = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}${query}`, {
+        method: 'GET',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        signal: controller.signal
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const payload = decodePayload(await response.text());
+      return await processResponse(action, payload, retryingKey, force => fetchRequest(action, params, force));
+    } catch (error) {
+      if (error?.name === 'AbortError') throw new Error('Tempo esgotado ao consultar o Apps Script.');
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  function jsonpRequest(action, params = {}, retryingKey = false) {
     return new Promise((resolve, reject) => {
       const endpoint = String(C.API_BASE || '').trim();
       if (!endpoint) {
@@ -99,19 +162,18 @@
         return;
       }
 
-      const callback = `__voleiJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const query = new URLSearchParams({ ...params, acao: action, callback, _: Date.now() });
-      if (ADMIN_ACTIONS.has(action)) {
-        try {
-          query.set('chave', adminKey(retryingKey));
-        } catch (error) {
-          reject(error);
-          return;
-        }
+      let query;
+      try {
+        query = buildQuery(action, params, retryingKey);
+      } catch (error) {
+        reject(error);
+        return;
       }
 
+      const callback = `__voleiJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      query.set('callback', callback);
       const script = document.createElement('script');
-      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao consultar o Apps Script.')), 25000);
+      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao consultar o Apps Script.')), 18000);
 
       function cleanup() {
         clearTimeout(timer);
@@ -125,25 +187,34 @@
         else resolve(value);
       }
 
-      window[callback] = response => {
-        if (!response || response.ok !== true) {
-          const message = response?.erro || 'Falha na comunicação com o Apps Script.';
-          cleanup();
-          if (ADMIN_ACTIONS.has(action) && !retryingKey && /chave administrativa/i.test(message)) {
-            localStorage.removeItem(ADMIN_KEY_STORE);
-            remoteRequest(action, params, true).then(resolve, reject);
-            return;
-          }
-          reject(new Error(message));
-          return;
+      window[callback] = async response => {
+        try {
+          const value = await processResponse(action, response, retryingKey, force => jsonpRequest(action, params, force));
+          finish(null, value);
+        } catch (error) {
+          finish(error);
         }
-        finish(null, normalizeResult(action, response.dados));
       };
 
-      script.onerror = () => finish(new Error('Não foi possível acessar o Apps Script. Verifique a implantação /exec.'));
-      script.src = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${query.toString()}`;
+      script.onerror = () => finish(new Error('A implantação /exec recusou o carregamento externo.'));
+      script.src = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${query}`;
       document.head.appendChild(script);
     });
+  }
+
+  async function remoteRequest(action, params = {}) {
+    try {
+      return await fetchRequest(action, params);
+    } catch (fetchError) {
+      if (!READ_ACTIONS.has(action)) {
+        throw new Error(`Não foi possível concluir a operação no Apps Script: ${fetchError.message}`);
+      }
+      try {
+        return await jsonpRequest(action, params);
+      } catch (jsonpError) {
+        throw new Error('A implantação do Apps Script não está disponível para o site. Edite a implantação e defina “Quem pode acessar: Qualquer pessoa”.');
+      }
+    }
   }
 
   function request(action, params = {}) {
@@ -159,7 +230,7 @@
     item.className = `toast ${type}`;
     item.textContent = text;
     wrap.appendChild(item);
-    setTimeout(() => item.remove(), 4500);
+    setTimeout(() => item.remove(), 5200);
   }
 
   window.Volei = {
