@@ -19,47 +19,44 @@
     team2: team2 ? teams[team2] : null,
     team1Placeholder: options.team1Placeholder || '',
     team2Placeholder: options.team2Placeholder || '',
-    scores: [[null,null],[null,null],[null,null]],
-    sets1: 0,
-    sets2: 0,
+    scores: options.scores || [[null,null],[null,null],[null,null]],
+    sets1: options.sets1 || 0,
+    sets2: options.sets2 || 0,
     winnerId: options.winnerId || '',
     status: options.status || 'AGUARDANDO',
-    finishedAt: '',
+    finishedAt: options.finishedAt || '',
     availableAt: options.availableAt || '',
     nextGame: options.nextGame || 0,
     nextSlot: options.nextSlot || 0
   });
 
   const fallback = {
-    version: 'V013_CONTINGENCIA_CHAVEAMENTO_ATUAL_2026-07-22',
-    status: 'SORTEADO',
-    message: 'Sorteio concluído. A primeira partida está liberada.',
+    version: 'V014_CHAVEAMENTO_COMPACTO_CLASSIFICACAO_FINAL_2026-07-22',
+    status: 'FINALIZADO',
+    message: 'Competição encerrada. Classificação final definida.',
     teams: Object.values(teams),
     rounds: [
       {
         index: 0,
-        name: 'QUARTAS DE FINAL',
+        name: 'FASE PRELIMINAR',
         matches: [
-          match(1, 'QUARTAS DE FINAL', 'E-005', 'E-004', { status:'LIBERADO', availableAt:'2026-07-22T10:54:49-03:00', nextGame:5, nextSlot:1 }),
-          match(2, 'QUARTAS DE FINAL', 'E-002', null, { status:'BYE', winnerId:'E-002', nextGame:5, nextSlot:2 }),
-          match(3, 'QUARTAS DE FINAL', 'E-003', null, { status:'BYE', winnerId:'E-003', nextGame:6, nextSlot:1 }),
-          match(4, 'QUARTAS DE FINAL', 'E-001', null, { status:'BYE', winnerId:'E-001', nextGame:6, nextSlot:2 })
+          match(1, 'FASE PRELIMINAR', 'E-005', 'E-004', { status:'FINALIZADO', winnerId:'E-004', sets1:0, sets2:2, scores:[[13,25],[20,25],[null,null]], finishedAt:'2026-07-22T11:56:00-03:00', nextGame:2, nextSlot:1 })
         ]
       },
       {
         index: 1,
         name: 'SEMIFINAL',
         matches: [
-          match(5, 'SEMIFINAL', null, 'E-002', { roundIndex:1, team1Placeholder:'Vencedor Jogo 1', nextGame:7, nextSlot:1 }),
-          match(6, 'SEMIFINAL', 'E-003', 'E-001', { roundIndex:1, nextGame:7, nextSlot:2 })
+          match(2, 'SEMIFINAL', 'E-004', 'E-002', { roundIndex:1, status:'FINALIZADO', winnerId:'E-002', sets1:0, sets2:2, scores:[[14,25],[9,25],[null,null]], nextGame:4, nextSlot:1 }),
+          match(3, 'SEMIFINAL', 'E-003', 'E-001', { roundIndex:1, status:'FINALIZADO', winnerId:'E-003', sets1:2, sets2:0, scores:[[25,18],[25,13],[null,null]], nextGame:4, nextSlot:2 })
         ]
       },
       {
         index: 2,
         name: 'DECISÕES',
         matches: [
-          match(7, 'FINAL', null, null, { roundIndex:2, team1Placeholder:'Vencedor Jogo 5', team2Placeholder:'Vencedor Jogo 6' }),
-          match(8, 'DISPUTA DE 3º LUGAR', null, null, { roundIndex:2, team1Placeholder:'Perdedor Jogo 5', team2Placeholder:'Perdedor Jogo 6' })
+          match(4, 'FINAL', 'E-002', 'E-003', { roundIndex:2, status:'FINALIZADO', winnerId:'E-002', sets1:2, sets2:0, scores:[[25,15],[25,18],[null,null]] }),
+          match(5, 'DISPUTA DE 3º LUGAR', 'E-004', 'E-001', { roundIndex:2, status:'FINALIZADO', winnerId:'E-004', sets1:2, sets2:1, scores:[[20,25],[25,15],[15,10]] })
         ]
       }
     ],
@@ -69,22 +66,21 @@
 
   const originalRequest = V.request.bind(V);
   V.request = async (action, params = {}) => {
-    const state = await originalRequest(action, params);
-    if (action !== 'estado') return state;
-
-    const hasBracket = Array.isArray(state?.rounds) && state.rounds.some(round => Array.isArray(round.matches) && round.matches.length);
-    const staleCountdown = String(state?.status || '').toUpperCase() === 'EM_CONTAGEM' && state?.inicioPrevisto && new Date(state.inicioPrevisto).getTime() <= Date.now();
-
-    if (hasBracket && !staleCountdown) return state;
-
-    return V.normalizeState({
-      ...state,
-      ...fallback,
-      players: Array.isArray(state?.players) ? state.players : [],
-      schedule: state?.schedule || {},
-      rules: state?.rules || {},
-      registrationOpen: false,
-      serverTime: new Date().toISOString()
-    });
+    try {
+      const state = await originalRequest(action, params);
+      if (action !== 'estado') return state;
+      const hasBracket = Array.isArray(state?.rounds) && state.rounds.some(round => Array.isArray(round.matches) && round.matches.length);
+      if (hasBracket) return state;
+      return V.normalizeState({
+        ...state,
+        ...fallback,
+        players: Array.isArray(state?.players) ? state.players : [],
+        schedule: state?.schedule || {}, rules: state?.rules || {}, registrationOpen: false,
+        serverTime: new Date().toISOString()
+      });
+    } catch (error) {
+      if (action !== 'estado') throw error;
+      return V.normalizeState({ ...fallback, players: [], schedule: {}, rules: {}, registrationOpen: false, serverTime: new Date().toISOString() });
+    }
   };
 })();
