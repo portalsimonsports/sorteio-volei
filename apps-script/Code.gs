@@ -1,6 +1,6 @@
-/** SORTEIO DE DUPLAS DE VÔLEI — V011 */
+/** SORTEIO DE DUPLAS DE VÔLEI — V012 */
 const VOLEI=Object.freeze({
- VERSION:'V011_AVALIACAO_AJUSTE_ASTERISCO_2026-07-22',
+ VERSION:'V012_DESEMPATE_ADULTO_IDADE_2026-07-22',
  SPREADSHEET_ID:'1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',TIMEZONE:'America/Sao_Paulo',
  SITE_URL:'https://portalsimonsports.github.io/sorteio-volei/',ADMIN_URL:'https://portalsimonsports.github.io/sorteio-volei/admin.html',
  SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS'}),
