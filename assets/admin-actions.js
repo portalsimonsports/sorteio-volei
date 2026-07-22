@@ -5,16 +5,23 @@
   const A = window.VoleiAdmin;
   const V = A.V;
   const ui = A.ui;
+  let lastConnectionError = '';
 
-  async function refresh() {
-    A.busy(ui.refreshAdmin, true, 'Atualizando...');
+  async function refresh(silent = false) {
+    if (!silent) A.busy(ui.refreshAdmin, true, 'Atualizando...');
     try {
       A.render(await V.request('admin'));
+      lastConnectionError = '';
     } catch (error) {
-      V.toast(error.message, 'error');
       A.render(V.read());
+      ui.adminMode.textContent = 'Sem conexão com o Apps Script';
+      ui.adminMode.title = error.message;
+      if (!silent || error.message !== lastConnectionError) {
+        V.toast(error.message, 'error');
+        lastConnectionError = error.message;
+      }
     } finally {
-      A.busy(ui.refreshAdmin, false);
+      if (!silent) A.busy(ui.refreshAdmin, false);
     }
   }
 
@@ -43,7 +50,7 @@
       ui.playerId.value = '';
       ui.playerActive.value = 'SIM';
       A.preview();
-      await refresh();
+      await refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     } finally {
@@ -75,12 +82,12 @@
     try {
       await V.request('excluirJogador', { id: player.id });
       V.toast('Participante excluído.');
-      await refresh();
+      await refresh(true);
     } catch (error) {
       V.toast(error.message, 'error');
     }
   });
 
-  ui.refreshAdmin.addEventListener('click', refresh);
+  ui.refreshAdmin.addEventListener('click', () => refresh(false));
   A.refresh = refresh;
 })();
