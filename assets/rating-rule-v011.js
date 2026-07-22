@@ -10,7 +10,7 @@
     const text = String(value ?? '').trim().replace(',', '.');
     const match = text.match(/^(10|[0-9])(\*)?$/);
     if (!match) {
-      throw new Error('Informe uma nota de 5 a 10. Para manter o valor exato, use *: 5*, 6*, 7* ou 4*.');
+      throw new Error('Informe uma nota de 5 a 10.');
     }
 
     const score = Number(match[1]);
@@ -20,7 +20,7 @@
     const legacy = !manual && score < 5 && params.id && Number.isFinite(previousScore) && score === previousScore;
 
     if (!manual && score < 5 && !legacy) {
-      throw new Error('Notas abaixo de 5 não são aceitas. Para manter o valor exato, digite o número seguido de *; exemplo: 4*.');
+      throw new Error('Informe uma nota de 5 a 10.');
     }
 
     let adjustedScore;
@@ -120,18 +120,13 @@
     input.removeAttribute('min');
     input.removeAttribute('max');
     input.removeAttribute('step');
-    input.placeholder = 'Ex.: 5, 6, 7 ou 5*';
+    input.placeholder = '5 a 10';
     input.autocomplete = 'off';
     const label = input.closest('label');
     if (label?.firstChild?.nodeType === Node.TEXT_NODE) {
-      label.firstChild.nodeValue = 'Como você avalia o seu jogo?';
+      label.firstChild.nodeValue = 'Como você avalia o seu jogo? De 5 a 10';
     }
-    if (label && !label.querySelector('.rating-help')) {
-      const help = document.createElement('small');
-      help.className = 'rating-help';
-      help.textContent = '5, 6 e 7 são ajustados para 8. Use * para manter o valor exato: 5*, 6*, 7* ou 4*.';
-      label.appendChild(help);
-    }
+    label?.querySelector('.rating-help')?.remove();
   }
 
   B.num = num;
