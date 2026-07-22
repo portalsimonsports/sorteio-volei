@@ -7,9 +7,10 @@
   <meta name="robots" content="noindex,nofollow">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Administração do Sorteio de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260722-1720">
-  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-1720">
-  <link rel="stylesheet" href="assets/dynamic-rules-v015.css?v=20260722-1720">
+  <link rel="stylesheet" href="assets/style.css?v=20260722-1810">
+  <link rel="stylesheet" href="assets/rating-v011.css?v=20260722-1810">
+  <link rel="stylesheet" href="assets/dynamic-rules-v015.css?v=20260722-1810">
+  <link rel="stylesheet" href="assets/championship-v016.css?v=20260722-1810">
 </head>
 <body data-page="admin">
   <header class="topbar">
@@ -19,9 +20,14 @@
 
   <main class="admin-wrap">
     <section class="admin-hero">
-      <div><span class="kicker">Controle do torneio</span><h1>Administração</h1><p>Gerencie inscrições, chaveamento, formato das partidas, placares e classificação final.</p></div>
+      <div><span class="kicker">Controle do torneio</span><h1>Administração</h1><p>Gerencie inscrições, edições de campeonato, chaveamento, formato das partidas, placares e classificação final.</p></div>
       <div class="admin-state"><span id="adminMode">Verificando</span><strong id="adminStatus">INSCRIÇÕES</strong></div>
     </section>
+
+    <div class="championship-viewer" id="championshipViewer" hidden>
+      <div><span>VISUALIZAÇÃO DO HISTÓRICO</span><strong id="championshipViewerName"></strong></div>
+      <button class="btn secondary small" id="backToCurrentChampionship" type="button">Voltar ao campeonato atual</button>
+    </div>
 
     <section class="panel" style="margin-top:18px">
       <div class="panel-head"><div><span class="kicker">Ações</span><h2>Sorteio e dados</h2><p>Com sete duplas, o sistema cria três quartas de final e uma classificação direta para a semifinal.</p></div></div>
@@ -31,6 +37,20 @@
         <button class="btn danger" id="clearAll" type="button">Apagar todos os dados</button>
         <button class="btn secondary" id="refreshAdmin" type="button">Atualizar painel</button>
       </div>
+    </section>
+
+    <section class="panel" style="margin-top:18px">
+      <div class="panel-head"><div><span class="kicker">Edições</span><h2>Gerar novo campeonato</h2><p>Crie um novo chaveamento sem apagar os campeonatos já concluídos.</p></div><span class="audit" id="championshipHistoryStatus">Carregando histórico...</span></div>
+      <form id="championshipForm">
+        <div class="championship-form-grid">
+          <label>Nome da nova edição<input id="championshipName" maxlength="60" placeholder="Ex.: Campeonato 2"></label>
+          <label>Composição das duplas<select id="championshipTeamMode"><option value="MESMAS_EQUIPES" selected>Reutilizar as mesmas duplas</option><option value="NOVAS_DUPLAS">Formar novas duplas</option></select></label>
+          <label>Modelo do chaveamento<select id="championshipBracketMode"><option value="AUTOMATICO" selected>Automático pela quantidade</option><option value="REPESCAGEM_5">5 duplas: uma folga + repescagem</option></select></label>
+          <button class="btn primary" id="createChampionship" type="submit">Gerar novo chaveamento</button>
+        </div>
+        <div class="championship-note" id="championshipBracketNote">O sistema calcula automaticamente fases preliminares, quartas, semifinais, terceiro lugar e final conforme a quantidade de duplas.</div>
+      </form>
+      <div class="championship-history-list" id="championshipHistory"></div>
     </section>
 
     <section class="panel" style="margin-top:18px">
@@ -85,23 +105,25 @@
   </main>
 
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260722-1720"></script>
-  <script src="assets/core-data.js?v=20260722-1720"></script>
-  <script src="assets/tournament-bracket.js?v=20260722-1720"></script>
-  <script src="assets/draw-tiebreak-v012.js?v=20260722-1720"></script>
-  <script src="assets/compact-bracket-v014.js?v=20260722-1720"></script>
-  <script src="assets/bracket-7-v015.js?v=20260722-1720"></script>
-  <script src="assets/tournament-score.js?v=20260722-1720"></script>
-  <script src="assets/dynamic-score-v015.js?v=20260722-1720"></script>
-  <script src="assets/tournament-api.js?v=20260722-1720"></script>
-  <script src="assets/datetime-fix-v015.js?v=20260722-1720"></script>
-  <script src="assets/rating-rule-v011.js?v=20260722-1720"></script>
-  <script src="assets/v010-compat.js?v=20260722-1720"></script>
-  <script src="assets/admin-base.js?v=20260722-1720"></script>
-  <script src="assets/rating-admin-v011.js?v=20260722-1720"></script>
-  <script src="assets/admin-results.js?v=20260722-1720"></script>
-  <script src="assets/admin-actions.js?v=20260722-1720"></script>
-  <script src="assets/admin-tournament-actions.js?v=20260722-1720"></script>
-  <script src="assets/admin-dynamic-v015.js?v=20260722-1720"></script>
+  <script src="config.js?v=20260722-1810"></script>
+  <script src="assets/core-data.js?v=20260722-1810"></script>
+  <script src="assets/tournament-bracket.js?v=20260722-1810"></script>
+  <script src="assets/draw-tiebreak-v012.js?v=20260722-1810"></script>
+  <script src="assets/compact-bracket-v014.js?v=20260722-1810"></script>
+  <script src="assets/bracket-7-v015.js?v=20260722-1810"></script>
+  <script src="assets/tournament-score.js?v=20260722-1810"></script>
+  <script src="assets/dynamic-score-v015.js?v=20260722-1810"></script>
+  <script src="assets/tournament-api.js?v=20260722-1810"></script>
+  <script src="assets/championship-api-v016.js?v=20260722-1810"></script>
+  <script src="assets/datetime-fix-v015.js?v=20260722-1810"></script>
+  <script src="assets/rating-rule-v011.js?v=20260722-1810"></script>
+  <script src="assets/v010-compat.js?v=20260722-1810"></script>
+  <script src="assets/admin-base.js?v=20260722-1810"></script>
+  <script src="assets/rating-admin-v011.js?v=20260722-1810"></script>
+  <script src="assets/admin-results.js?v=20260722-1810"></script>
+  <script src="assets/admin-actions.js?v=20260722-1810"></script>
+  <script src="assets/admin-tournament-actions.js?v=20260722-1810"></script>
+  <script src="assets/admin-dynamic-v015.js?v=20260722-1810"></script>
+  <script src="assets/championship-admin-v016.js?v=20260722-1810"></script>
 </body>
 </html>
