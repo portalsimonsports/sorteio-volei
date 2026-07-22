@@ -6,12 +6,11 @@
   const C = V.C;
   const ui = {};
   let state = V.read();
-  const ids = [
+  [
     'adminMode','adminStatus','drawNow','resetDraw','clearAll','refreshAdmin',
-    'playerForm','playerId','playerName','playerBirth','playerScore','playerActive',
+    'playerForm','playerId','playerName','playerAge','playerScore','playerActive',
     'categoryPreview','playersTableBody','teamsPreview','matchesAdmin','sheetLink'
-  ];
-  ids.forEach(id => ui[id] = document.getElementById(id));
+  ].forEach(id => ui[id] = document.getElementById(id));
 
   function element(tag, className, text) {
     const item = document.createElement(tag);
@@ -33,10 +32,10 @@
   }
 
   function preview() {
-    const playerAge = V.age(ui.playerBirth.value);
+    const playerAge = Number(ui.playerAge.value);
     const score = V.num(ui.playerScore.value);
-    if (playerAge < 0) {
-      ui.categoryPreview.textContent = 'Informe a data de nascimento e a nota. Categoria automática.';
+    if (!Number.isInteger(playerAge) || playerAge < 1 || playerAge > 100) {
+      ui.categoryPreview.textContent = 'Informe a idade e a nota. Categoria automática.';
       return;
     }
     const category = V.category(playerAge);
@@ -44,9 +43,7 @@
     ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label} • Nota ${V.fmt(score)} • Índice ${V.fmt(V.index(score))}.${warning}`;
   }
 
-  function addCell(row, text) {
-    row.appendChild(element('td', '', text));
-  }
+  function addCell(row, text) { row.appendChild(element('td', '', text)); }
 
   function renderPlayers(players) {
     ui.playersTableBody.replaceChildren();
@@ -58,7 +55,6 @@
       ui.playersTableBody.appendChild(row);
       return;
     }
-
     players.forEach(player => {
       const row = element('tr');
       addCell(row, player.id);
@@ -68,20 +64,13 @@
       addCell(row, V.fmt(player.score));
       addCell(row, V.fmt(player.adjustedScore));
       addCell(row, player.active);
-
       const actionsCell = element('td');
       const actions = element('div', 'actions');
       const edit = element('button', 'action edit', 'Editar');
-      edit.type = 'button';
-      edit.dataset.action = 'edit';
-      edit.dataset.id = player.id;
+      edit.type = 'button'; edit.dataset.action = 'edit'; edit.dataset.id = player.id;
       const remove = element('button', 'action delete', 'Excluir');
-      remove.type = 'button';
-      remove.dataset.action = 'delete';
-      remove.dataset.id = player.id;
-      actions.append(edit, remove);
-      actionsCell.appendChild(actions);
-      row.appendChild(actionsCell);
+      remove.type = 'button'; remove.dataset.action = 'delete'; remove.dataset.id = player.id;
+      actions.append(edit, remove); actionsCell.appendChild(actions); row.appendChild(actionsCell);
       ui.playersTableBody.appendChild(row);
     });
   }
@@ -94,16 +83,15 @@
       ui.teamsPreview.appendChild(card);
       return;
     }
-
     teams.forEach((team, index) => {
       const card = element('article', 'team card');
       const head = element('div', 'team-head');
-      head.append(element('span', '', `EQUIPE ${String(index + 1).padStart(2, '0')}`));
-      head.append(element('strong', '', `Índice ${V.fmt(team.totalIndex)}`));
+      head.append(element('span', '', `DUPLA ${String(index + 1).padStart(2, '0')}`));
+      head.append(element('strong', '', team.type === 'ADULTOS' ? '2 adultos' : team.type === 'CRIANCAS' ? '2 crianças' : 'Mista'));
       const members = element('div', 'team-members');
-      [[team.adult, team.adultIndex], [team.child, team.childIndex]].forEach(member => {
+      [[team.member1, team.member1Pot, team.member1Index], [team.member2, team.member2Pot, team.member2Index]].forEach(member => {
         const row = element('div', 'team-member');
-        row.append(element('span', '', member[0]), element('span', '', V.fmt(member[1])));
+        row.append(element('span', '', `${member[1] === 'A' ? 'Adulto' : 'Criança'}: ${member[0]}`), element('span', '', V.fmt(member[2])));
         members.appendChild(row);
       });
       card.append(head, members);
@@ -113,18 +101,12 @@
 
   function render(next) {
     state = next;
-    ui.adminMode.textContent = C.DEMO_MODE || !C.API_BASE
-      ? 'Modo local do navegador'
-      : 'Sincronizado com Google Sheets';
+    ui.adminMode.textContent = C.DEMO_MODE || !C.API_BASE ? 'Modo local do navegador' : 'Sincronizado com Google Sheets';
     ui.adminStatus.textContent = next.status;
     renderPlayers(next.players);
     renderTeams(next.teams);
     window.VoleiAdmin.renderMatches(next.rounds);
   }
 
-  window.VoleiAdmin = {
-    V, C, ui, element, busy, preview, render,
-    renderMatches: () => {},
-    getState: () => state
-  };
+  window.VoleiAdmin = { V, C, ui, element, busy, preview, render, renderMatches: () => {}, getState: () => state };
 })();
