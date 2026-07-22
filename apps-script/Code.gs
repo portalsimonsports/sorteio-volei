@@ -1,12 +1,12 @@
-/** SORTEIO DE DUPLAS DE VÔLEI — V007 */
+/** SORTEIO DE DUPLAS DE VÔLEI — V010 */
 const VOLEI=Object.freeze({
- VERSION:'V007_BYES_5_6_DUPLAS_PODIO_2026-07-21',
+ VERSION:'V010_CADASTRO_IDADE_DUPLAS_FLEXIVEIS_AGENDA_2026-07-21',
  SPREADSHEET_ID:'1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',TIMEZONE:'America/Sao_Paulo',
  SITE_URL:'https://portalsimonsports.github.io/sorteio-volei/',ADMIN_URL:'https://portalsimonsports.github.io/sorteio-volei/admin.html',
  SHEETS:Object.freeze({CONFIG:'CONFIG',JOGADORES:'JOGADORES',EQUIPES:'EQUIPES',CHAVEAMENTO:'CHAVEAMENTO',SORTEIOS:'SORTEIOS',LOG:'LOG',LISTAS:'LISTAS'}),
  HEADERS:Object.freeze({
-  JOGADORES:['ID','NOME','DATA_NASCIMENTO','IDADE','POTE','CATEGORIA','NOTA_DESEMPENHO','NOTA_AJUSTADA','ATIVO','DATA_CADASTRO','OBSERVAÇÃO'],
-  EQUIPES:['EQUIPE_ID','ADULTO_ID','ADULTO','NOTA_ADULTO','INDICE_ADULTO','CRIANCA_ID','CRIANCA','NOTA_CRIANCA','INDICE_CRIANCA','INDICE_TOTAL','ORDEM_BALANCEAMENTO','ORDEM_CHAVEAMENTO'],
+  JOGADORES:['ID','NOME','IDADE','POTE','CATEGORIA','NOTA_DESEMPENHO','NOTA_AJUSTADA','ATIVO','DATA_CADASTRO','OBSERVAÇÃO'],
+  EQUIPES:['EQUIPE_ID','JOGADOR_1_ID','JOGADOR_1','POTE_1','NOTA_1','INDICE_1','JOGADOR_2_ID','JOGADOR_2','POTE_2','NOTA_2','INDICE_2','INDICE_TOTAL','TIPO_DUPLA','ORDEM_BALANCEAMENTO','ORDEM_CHAVEAMENTO'],
   CHAVEAMENTO:['SORTEIO_ID','JOGO','FASE','EQUIPE_1_ID','EQUIPE_1','EQUIPE_2_ID','EQUIPE_2','SET1_EQ1','SET1_EQ2','SET2_EQ1','SET2_EQ2','SET3_EQ1','SET3_EQ2','SETS_EQ1','SETS_EQ2','VENCEDOR_ID','STATUS','FIM_PARTIDA','DISPONIVEL_EM','RODADA_INDEX','PROXIMO_JOGO','PROXIMO_SLOT'],
   SORTEIOS:['SORTEIO_ID','STATUS','CODIGO_HASH','CODIGO_FINAL','CRIADO_EM','ATIVADO_EM','INICIO_PREVISTO','REALIZADO_EM','SEED','HASH_AUDITORIA','ATIVADO_POR','MENSAGEM','FINALIZADO_EM','CAMPEAO_ID'],
   LOG:['DATA_HORA','EVENTO','SORTEIO_ID','ORIGEM','USUARIO','DETALHES','NIVEL','ENTIDADE_ID'],
@@ -35,7 +35,6 @@ function aba_(n){const s=ss_().getSheetByName(n);if(!s)throw Error('Aba obrigat�
 function props_(){return PropertiesService.getScriptProperties();}
 function lock_(){return LockService.getScriptLock();}
 function formatarData_(d){return Utilities.formatDate(d||new Date(),VOLEI.TIMEZONE,'dd/MM/yyyy HH:mm:ss');}
-function formatarNascimento_(d){return Utilities.formatDate(d,VOLEI.TIMEZONE,'yyyy-MM-dd');}
 function gerarId_(p){return p+'-'+Utilities.formatDate(new Date(),VOLEI.TIMEZONE,'yyyyMMddHHmmss')+'-'+Math.floor(100+Math.random()*900);}
 function hash_(v){return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(v),Utilities.Charset.UTF_8).map(b=>('0'+((b+256)%256).toString(16)).slice(-2)).join('').toUpperCase();}
 function compararSeguro_(a,b){const x=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(a),Utilities.Charset.UTF_8),y=Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256,String(b),Utilities.Charset.UTF_8);if(x.length!==y.length)return false;let d=0;for(let i=0;i<x.length;i++)d|=x[i]^y[i];return d===0;}
