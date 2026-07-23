@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="robots" content="noindex,nofollow">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Administração — Tênis de Mesa</title>
+  <link rel="stylesheet" href="assets/style.css?v=20260723-1500">
+  <link rel="stylesheet" href="assets/tenis-mesa.css?v=20260723-1500">
+</head>
+<body data-page="tenis-mesa-admin">
+  <header class="tm-topbar">
+    <a class="tm-brand" href="./tenis-mesa-admin.html"><span class="tm-brand-icon">🏓</span><span class="tm-brand-copy"><strong>Tênis de Mesa</strong><small>Painel administrativo</small></span></a>
+    <nav class="tm-nav"><a href="./admin.html">Admin do vôlei</a><a href="./tenis-mesa.html">Página pública</a><button class="tm-button primary" id="tmRefresh" type="button" style="min-height:42px">Atualizar</button></nav>
+  </header>
+
+  <main class="tm-main">
+    <section class="tm-hero">
+      <span class="tm-kicker">Controle da competição</span>
+      <h1>Tênis de Mesa</h1>
+      <p>Cadastre participantes, selecione livremente quem disputará cada edição, defina sets e pontuação, limite a quantidade de jogos e acompanhe o ranking.</p>
+      <div class="tm-note" style="background:rgba(255,255,255,.09);color:#d3e2ef;border:1px solid rgba(255,255,255,.12)" id="tmCurrentSummary">Carregando campeonato atual...</div>
+      <div style="margin-top:14px;color:#a9bfd2;font-weight:800" id="tmAdminConnection">Conectando ao Google Sheets...</div>
+    </section>
+
+    <div class="tm-grid">
+      <section class="tm-panel tm-span-5">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e7faf4;color:#087556">Cadastro</span><h2>Participantes</h2><p>O cadastro permanece disponível mesmo depois da geração dos jogos.</p></div></div>
+        <form class="tm-form-grid" id="tmPlayerForm">
+          <input type="hidden" id="tmPlayerId">
+          <label>Nome<input id="tmPlayerName" required maxlength="50" placeholder="Nome do participante"></label>
+          <label>Idade<input id="tmPlayerAge" required type="number" min="5" max="100" step="1" placeholder="Idade em anos"></label>
+          <label>Sexo<select id="tmPlayerSex"><option value="">Não informar</option><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
+          <label>Ativo<select id="tmPlayerActive"><option value="SIM">SIM</option><option value="NAO">NÃO</option></select></label>
+          <button class="tm-button primary" type="submit">Salvar participante</button>
+        </form>
+      </section>
+
+      <section class="tm-panel tm-span-7">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#edf7fb;color:#0f4c81">Seleção livre</span><h2>Escolher participantes</h2><p>A seleção é independente de qualquer chaveamento ou campeonato anterior.</p></div><span class="tm-chip" id="tmSelectedCount">0 participantes selecionados</span></div>
+        <div class="tm-actions"><button class="tm-button secondary" id="tmSelectAll" type="button">Selecionar ativos</button><button class="tm-button secondary" id="tmSelectNone" type="button">Limpar seleção</button></div>
+        <div class="tm-player-list" id="tmPlayers" style="margin-top:14px"></div>
+      </section>
+
+      <section class="tm-panel tm-span-12">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#fff4d7;color:#8a5c00">Gerador</span><h2>Novo campeonato e quantidade de jogos</h2><p>Defina os limites. O sistema distribui os confrontos de forma equilibrada e evita ultrapassar o máximo por participante.</p></div></div>
+        <form id="tmTournamentForm">
+          <div class="tm-form-grid cols-3">
+            <label>Nome do campeonato<input id="tmTournamentName" maxlength="60" placeholder="Ex.: Campeonato de Julho"></label>
+            <label>Sets por jogo<select id="tmBestOf"><option value="1">1 set</option><option value="3" selected>Melhor de 3</option><option value="5">Melhor de 5</option><option value="7">Melhor de 7</option></select></label>
+            <label>Pontos por set<input id="tmSetPoints" type="number" min="1" max="99" step="1" value="11"></label>
+            <label>Vantagem mínima<input id="tmMinimumLead" type="number" min="1" max="10" step="1" value="2"></label>
+            <label>Pontos por vitória<input id="tmWinPoints" type="number" min="0" max="20" step="1" value="3"></label>
+            <label>Pontos por derrota<input id="tmLossPoints" type="number" min="0" max="20" step="1" value="0"></label>
+            <label>Máximo por participante<input id="tmMaxGamesPlayer" type="number" min="0" max="100" step="1" value="0"><small>0 = todos os confrontos permitidos</small></label>
+            <label>Máximo total de jogos<input id="tmMaxGamesTotal" type="number" min="0" max="1000" step="1" value="0"><small>0 = sem limite total</small></label>
+            <label>Turnos<select id="tmTurns"><option value="1" selected>1 turno</option><option value="2">2 turnos</option></select></label>
+            <label>Próximo jogo automático<select id="tmAutoStart"><option value="SIM" selected>SIM — iniciar ao concluir o anterior</option><option value="NAO">NÃO — apenas liberar</option></select></label>
+          </div>
+          <div class="tm-actions"><button class="tm-button primary" id="tmCreateTournament" type="submit">Gerar jogos com os selecionados</button></div>
+        </form>
+        <div class="tm-note">Quando os limites forem menores que o total possível, o gerador prioriza a distribuição mais uniforme de jogos entre os participantes.</div>
+      </section>
+
+      <section class="tm-panel tm-span-5">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e8eef5;color:#344054">Histórico</span><h2>Campeonatos preservados</h2><p>Abra qualquer edição sem apagar os resultados anteriores.</p></div></div>
+        <div class="tm-history" id="tmChampionships"></div>
+      </section>
+
+      <section class="tm-panel tm-span-7">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#edf7fb;color:#0f4c81">Resultado</span><h2>Lançar placar</h2><p>O número de campos acompanha a quantidade de sets definida no campeonato.</p></div></div>
+        <form id="tmScoreForm">
+          <label style="display:flex;flex-direction:column;gap:7px;font-weight:900">Partida<select class="tm-match-select" id="tmMatchSelect"><option value="">Selecione uma partida</option></select></label>
+          <div class="tm-score-grid" id="tmScoreFields"></div>
+          <div class="tm-actions"><button class="tm-button secondary" id="tmStartMatch" type="button">Registrar início</button><button class="tm-button primary" id="tmSaveScore" type="submit">Salvar placar</button></div>
+        </form>
+      </section>
+
+      <section class="tm-panel tm-span-12">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#fff4d7;color:#8a5c00">Ranking</span><h2>Pontos e aproveitamento</h2><p>Critérios: pontos, aproveitamento, saldo de sets, saldo de pontos e sets vencidos.</p></div></div>
+        <div class="tm-ranking" id="tmAdminRanking"></div>
+      </section>
+
+      <section class="tm-panel tm-span-12">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e8eef5;color:#344054">Jogos</span><h2>Programação completa</h2><p>O horário real de início e término é armazenado em cada partida.</p></div></div>
+        <div class="tm-matches" id="tmAdminMatches"></div>
+      </section>
+
+      <section class="tm-panel tm-span-12"><a class="tm-button secondary" id="tmSheetLink" target="_blank" rel="noopener">Abrir planilha administrativa</a></section>
+    </div>
+  </main>
+
+  <footer class="tm-footer"><span>🏓 Administração do tênis de mesa</span><span>V021</span></footer>
+  <div class="toast-wrap" id="toastWrap"></div>
+  <script src="config.js?v=20260723-1500"></script>
+  <script src="assets/tenis-mesa-api.js?v=20260723-1500"></script>
+  <script src="assets/tenis-mesa-admin.js?v=20260723-1500"></script>
+</body>
+</html>
