@@ -7,11 +7,11 @@
   <meta name="robots" content="noindex,nofollow">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>Administração do Sorteio de Vôlei</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260723-0940">
-  <link rel="stylesheet" href="assets/rating-v011.css?v=20260723-0940">
-  <link rel="stylesheet" href="assets/dynamic-rules-v015.css?v=20260723-0940">
-  <link rel="stylesheet" href="assets/championship-v016.css?v=20260723-0940">
-  <link rel="stylesheet" href="assets/championship-teams-fix-v017.css?v=20260723-0940">
+  <link rel="stylesheet" href="assets/style.css?v=20260723-1430">
+  <link rel="stylesheet" href="assets/rating-v011.css?v=20260723-1430">
+  <link rel="stylesheet" href="assets/dynamic-rules-v015.css?v=20260723-1430">
+  <link rel="stylesheet" href="assets/championship-v016.css?v=20260723-1430">
+  <link rel="stylesheet" href="assets/championship-teams-fix-v017.css?v=20260723-1430">
 </head>
 <body data-page="admin">
   <header class="topbar">
@@ -55,21 +55,22 @@
     </section>
 
     <section class="panel" style="margin-top:18px">
-      <div class="panel-head"><div><span class="kicker">Inscrições</span><h2>Adultos e crianças</h2></div></div>
+      <div class="panel-head"><div><span class="kicker">Inscrições</span><h2>Adultos e crianças</h2><p>O sexo é administrativo e usado somente para impedir dupla com dois adultos de sexos diferentes.</p></div></div>
       <form class="form-grid" id="playerForm">
         <input type="hidden" id="playerId">
         <label>Nome<input id="playerName" required maxlength="50" placeholder="Nome do participante"></label>
         <label>Idade<input id="playerAge" required type="number" min="1" max="100" step="1" placeholder="Idade em anos"></label>
+        <label>Sexo<select id="playerSex"><option value="">Selecione</option><option value="M">Masculino</option><option value="F">Feminino</option></select></label>
         <label>Como você avalia o seu jogo? De 5 a 10<input id="playerScore" required type="text" inputmode="text" maxlength="3" placeholder="5 a 10"></label>
         <label>Ativo<select id="playerActive"><option value="SIM">SIM</option><option value="NAO">NÃO</option></select></label>
         <button class="btn primary" type="submit">Salvar participante</button>
       </form>
-      <div class="preview" id="categoryPreview">Informe a idade e a avaliação do jogo. Categoria automática.</div>
-      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>Idade</th><th>Categoria</th><th>Nota</th><th>Índice</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="playersTableBody"></tbody></table></div>
+      <div class="preview" id="categoryPreview">Informe a idade, o sexo e a avaliação do jogo. Categoria automática.</div>
+      <div class="table-wrap"><table><thead><tr><th>ID</th><th>Nome</th><th>Idade</th><th>Categoria</th><th>Sexo</th><th>Nota</th><th>Índice</th><th>Ativo</th><th>Ações</th></tr></thead><tbody id="playersTableBody"></tbody></table></div>
     </section>
 
     <section class="panel" style="margin-top:18px">
-      <div class="panel-head"><div><span class="kicker">Duplas</span><h2>Equipes sorteadas</h2><p>As duplas podem ser mistas, com dois adultos ou com duas crianças.</p></div></div>
+      <div class="panel-head"><div><span class="kicker">Duplas</span><h2>Equipes sorteadas</h2><p>Duplas mistas adulto–criança são permitidas. Quando houver dois adultos, ambos devem ser do mesmo sexo.</p></div></div>
       <div class="teams" id="teamsPreview"></div>
     </section>
 
@@ -106,26 +107,26 @@
   </main>
 
   <div class="toast-wrap" id="toastWrap"></div>
-  <script src="config.js?v=20260723-0940"></script>
-  <script src="assets/core-data.js?v=20260723-0940"></script>
-  <script src="assets/tournament-bracket.js?v=20260723-0940"></script>
-  <script src="assets/draw-tiebreak-v012.js?v=20260723-0940"></script>
-  <script src="assets/compact-bracket-v014.js?v=20260723-0940"></script>
-  <script src="assets/bracket-7-v015.js?v=20260723-0940"></script>
-  <script src="assets/tournament-score.js?v=20260723-0940"></script>
-  <script src="assets/dynamic-score-v015.js?v=20260723-0940"></script>
-  <script src="assets/tournament-api.js?v=20260723-0940"></script>
-  <script src="assets/championship-api-v016.js?v=20260723-1405"></script>
-  <script src="assets/datetime-fix-v015.js?v=20260723-0940"></script>
-  <script src="assets/rating-rule-v011.js?v=20260723-0940"></script>
-  <script src="assets/v010-compat.js?v=20260723-0940"></script>
-  <script src="assets/admin-base.js?v=20260723-0940"></script>
-  <script src="assets/rating-admin-v011.js?v=20260723-0940"></script>
-  <script src="assets/admin-results.js?v=20260723-0940"></script>
-  <script src="assets/admin-actions.js?v=20260723-0940"></script>
-  <script src="assets/admin-tournament-actions.js?v=20260723-0940"></script>
-  <script src="assets/admin-dynamic-v015.js?v=20260723-0940"></script>
-  <script src="assets/championship-admin-v016.js?v=20260723-1405"></script>
-  <script src="assets/championship-teams-fix-v017.js?v=20260723-0940"></script>
+  <script src="config.js?v=20260723-1430"></script>
+  <script src="assets/core-data.js?v=20260723-1430"></script>
+  <script src="assets/tournament-bracket.js?v=20260723-1430"></script>
+  <script src="assets/draw-tiebreak-v012.js?v=20260723-1430"></script>
+  <script src="assets/compact-bracket-v014.js?v=20260723-1430"></script>
+  <script src="assets/bracket-7-v015.js?v=20260723-1430"></script>
+  <script src="assets/tournament-score.js?v=20260723-1430"></script>
+  <script src="assets/dynamic-score-v015.js?v=20260723-1430"></script>
+  <script src="assets/tournament-api.js?v=20260723-1430"></script>
+  <script src="assets/championship-api-v016.js?v=20260723-1430"></script>
+  <script src="assets/datetime-fix-v015.js?v=20260723-1430"></script>
+  <script src="assets/rating-rule-v011.js?v=20260723-1430"></script>
+  <script src="assets/v010-compat.js?v=20260723-1430"></script>
+  <script src="assets/admin-base.js?v=20260723-1430"></script>
+  <script src="assets/rating-admin-v011.js?v=20260723-1430"></script>
+  <script src="assets/admin-results.js?v=20260723-1430"></script>
+  <script src="assets/admin-actions.js?v=20260723-1430"></script>
+  <script src="assets/admin-tournament-actions.js?v=20260723-1430"></script>
+  <script src="assets/admin-dynamic-v015.js?v=20260723-1430"></script>
+  <script src="assets/championship-admin-v016.js?v=20260723-1430"></script>
+  <script src="assets/championship-teams-fix-v017.js?v=20260723-1430"></script>
 </body>
 </html>
