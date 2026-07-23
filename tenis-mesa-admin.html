@@ -23,7 +23,7 @@
       <h1>Tênis de Mesa</h1>
       <p>Cadastre participantes, selecione livremente quem disputará cada edição, defina sets e pontuação, limite a quantidade de jogos e acompanhe o ranking.</p>
       <div class="tm-note" style="background:rgba(255,255,255,.09);color:#d3e2ef;border:1px solid rgba(255,255,255,.12)" id="tmCurrentSummary">Carregando campeonato atual...</div>
-      <div style="margin-top:14px;color:#a9bfd2;font-weight:800" id="tmAdminConnection">Conectando ao Google Sheets...</div>
+      <div style="margin-top:14px;color:#a9bfd2;font-weight:800" id="tmAdminConnection">Carregando dados...</div>
     </section>
 
     <div class="tm-grid">
@@ -50,6 +50,25 @@
         <form id="tmTournamentForm"><div class="tm-note">Carregando editor do campeonato...</div></form>
       </section>
 
+      <section class="tm-panel tm-span-12" id="tmFreeMatchPanel">
+        <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e7faf4;color:#087556">JOGO AVULSO</span><h2>Selecionar confronto</h2><p>Escolha os dois participantes. Depois do resultado, o vencedor permanece selecionado até perder.</p></div></div>
+        <div class="flex-v024-current-winner" id="tmFreeWinnerNote" hidden></div>
+        <div class="flex-v024-versus">
+          <label><span id="tmFreePlayer1Label">Participante 1</span><select id="tmFreePlayer1"><option value="">Carregando participantes...</option></select></label>
+          <div class="versus-mark">×</div>
+          <label>Desafiante<select id="tmFreePlayer2"><option value="">Carregando participantes...</option></select></label>
+        </div>
+        <div class="flex-v023-grid" style="margin-top:12px">
+          <label>Sets<select id="tmFreeBestOf"><option value="1">1 set</option><option value="3" selected>Melhor de 3</option><option value="5">Melhor de 5</option><option value="7">Melhor de 7</option></select></label>
+          <label>Pontos por set<input id="tmFreeSetPoints" type="number" min="1" max="99" value="11"></label>
+          <label>Vantagem mínima<input id="tmFreeMinimumLead" type="number" min="1" max="10" value="2"></label>
+          <label>Pontos por vitória<input id="tmFreeWinPoints" type="number" min="0" max="20" value="3"></label>
+          <label>Pontos por derrota<input id="tmFreeLossPoints" type="number" min="0" max="20" value="0"></label>
+        </div>
+        <div class="tm-actions"><button class="tm-button primary" id="tmFreeNewGame" type="button">Novo jogo</button></div>
+        <div class="flex-v023-free-list" id="tmFreeMatches"><div class="flex-v023-empty">Nenhum confronto avulso registrado.</div></div>
+      </section>
+
       <section class="tm-panel tm-span-5">
         <div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e8eef5;color:#344054">Histórico</span><h2>Campeonatos preservados</h2><p>Abra qualquer edição sem apagar os resultados anteriores.</p></div></div>
         <div class="tm-history" id="tmChampionships"></div>
@@ -74,16 +93,17 @@
         <div class="tm-matches" id="tmAdminMatches"></div>
       </section>
 
-      <section class="tm-panel tm-span-12"><a class="tm-button secondary" id="tmSheetLink" target="_blank" rel="noopener">Abrir planilha administrativa</a></section>
+      <section hidden aria-hidden="true"><a id="tmSheetLink" target="_blank" rel="noopener"></a></section>
     </div>
   </main>
 
-  <footer class="tm-footer"><span>🏓 Administração do tênis de mesa</span><span>V025</span></footer>
+  <footer class="tm-footer"><span>🏓 Administração do tênis de mesa</span><span>V027</span></footer>
   <div class="toast-wrap" id="toastWrap"></div>
   <script src="config.js?v=20260723-1500"></script>
   <script src="assets/tenis-mesa-api.js?v=20260723-1500"></script>
   <script src="assets/tenis-mesa-admin.js?v=20260723-1500"></script>
   <script src="assets/flex-shared-v023.js?v=20260723-2145"></script>
-  <script src="assets/tenis-admin-v025.js?v=20260723-2145"></script>
+  <script src="assets/tenis-admin-v027.js?v=20260723-2245"></script>
+  <script src="assets/sem-referencia-planilhas-v026.js?v=20260723-2245"></script>
 </body>
 </html>
