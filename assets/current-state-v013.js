@@ -3,6 +3,19 @@
   const V = window.Volei;
   if (!V) return;
 
+  const players = [
+    { id:'B-001', name:'Stefany', age:15, pot:'B', category:'CRIANCA', categoryLabel:'Criança', active:'SIM' },
+    { id:'B-002', name:'Susany', age:10, pot:'B', category:'CRIANCA', categoryLabel:'Criança', active:'SIM' },
+    { id:'B-003', name:'Ana Luisa', age:13, pot:'B', category:'CRIANCA', categoryLabel:'Criança', active:'SIM' },
+    { id:'B-004', name:'Emilly', age:11, pot:'B', category:'CRIANCA', categoryLabel:'Criança', active:'SIM' },
+    { id:'A-001', name:'Fabio', age:45, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' },
+    { id:'A-002', name:'Guilherme', age:40, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' },
+    { id:'A-003', name:'Raquel', age:38, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' },
+    { id:'A-004', name:'Junior', age:43, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' },
+    { id:'A-005', name:'Vania', age:42, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' },
+    { id:'A-006', name:'Luis', age:47, pot:'A', category:'ADULTO', categoryLabel:'Adulto', active:'SIM' }
+  ];
+
   const teams = {
     'E-001': { id:'E-001', member1Id:'A-003', member1:'Raquel', member1Pot:'A', member1Score:7, member1Index:8, member2Id:'B-002', member2:'Susany', member2Pot:'B', member2Score:3, member2Index:3, type:'MISTA', totalIndex:11 },
     'E-002': { id:'E-002', member1Id:'A-002', member1:'Guilherme', member1Pot:'A', member1Score:7, member1Index:8, member2Id:'B-003', member2:'Ana Luisa', member2Pot:'B', member2Score:8, member2Index:8, type:'MISTA', totalIndex:16 },
@@ -32,10 +45,11 @@
   });
 
   const fallback = {
-    version: 'V015_SETS_PONTOS_HORARIO_REAL_CHAVEAMENTO_7_2026-07-22',
+    version: 'V019_PRESERVACAO_DADOS_OPERACIONAIS_2026-07-23',
     status: 'FINALIZADO',
     message: 'Competição encerrada. Classificação final definida.',
     rules: { bestOf:3, setsToWin:2, normalSetPoints:25, tiebreakSetPoints:15, minimumLead:2, matchIntervalMinutes:10 },
+    players,
     teams: Object.values(teams),
     rounds: [
       {
@@ -72,17 +86,20 @@
       const state = await originalRequest(action, params);
       if (action !== 'estado') return state;
       const hasBracket = Array.isArray(state?.rounds) && state.rounds.some(round => Array.isArray(round.matches) && round.matches.length);
-      if (hasBracket) return state;
+      const hasPlayers = Array.isArray(state?.players) && state.players.length;
+      if (hasBracket && hasPlayers) return state;
       return V.normalizeState({
         ...state,
         ...fallback,
-        players: Array.isArray(state?.players) ? state.players : [],
+        players: hasPlayers ? state.players : fallback.players,
+        teams: hasBracket && Array.isArray(state?.teams) && state.teams.length ? state.teams : fallback.teams,
+        rounds: hasBracket ? state.rounds : fallback.rounds,
         schedule: state?.schedule || {}, rules: state?.rules || fallback.rules, registrationOpen: false,
         serverTime: new Date().toISOString()
       });
     } catch (error) {
       if (action !== 'estado') throw error;
-      return V.normalizeState({ ...fallback, players: [], schedule: {}, registrationOpen: false, serverTime: new Date().toISOString() });
+      return V.normalizeState({ ...fallback, schedule: {}, registrationOpen: false, serverTime: new Date().toISOString() });
     }
   };
 })();
