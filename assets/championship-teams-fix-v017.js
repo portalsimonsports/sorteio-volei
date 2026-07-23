@@ -13,8 +13,8 @@
 
   function unwrapState(value) {
     if (!value || typeof value !== 'object') return {};
-    if (value.state && typeof value.state === 'object') return value.state;
-    if (value.dados && typeof value.dados === 'object') return value.dados;
+    if (value.state && typeof value.state === 'object') return unwrapState(value.state);
+    if (value.dados && typeof value.dados === 'object') return unwrapState(value.dados);
     return value;
   }
 
@@ -28,18 +28,25 @@
     if (!map.has(key)) map.set(key, team);
   }
 
+  function addMatches(map, matches) {
+    (Array.isArray(matches) ? matches : []).forEach(match => {
+      addTeam(map, match?.team1 ?? match?.equipe1);
+      addTeam(map, match?.team2 ?? match?.equipe2);
+    });
+  }
+
   function collectTeams(rawState) {
     const state = unwrapState(rawState);
     const map = new Map();
 
     (Array.isArray(state.teams) ? state.teams : []).forEach(team => addTeam(map, team));
     (Array.isArray(state.equipes) ? state.equipes : []).forEach(team => addTeam(map, team));
+    addMatches(map, state.matches);
+    addMatches(map, state.jogos);
 
     (Array.isArray(state.rounds) ? state.rounds : []).forEach(round => {
-      (Array.isArray(round?.matches) ? round.matches : []).forEach(match => {
-        addTeam(map, match?.team1);
-        addTeam(map, match?.team2);
-      });
+      addMatches(map, round?.matches);
+      addMatches(map, round?.jogos);
     });
 
     return [...map.values()];
@@ -74,7 +81,7 @@
              <small>${members.map(member => V.esc(memberLabel(member))).join(' • ')}</small>
            </article>`;
          }).join('')}</div>`
-      : '<div class="message error">As duplas não vieram na resposta do campeonato. Atualize a implantação do Apps Script para a versão V016.</div>';
+      : '<div class="message error">Não foi possível reconstruir as duplas desta edição a partir do estado ou do chaveamento.</div>';
   }
 
   historyTarget.addEventListener('click', async event => {
@@ -95,20 +102,12 @@
 
     A.busy(button, true, 'Carregando duplas...');
     try {
-      const card = button.closest('.championship-history-card');
-      let state = card?.classList.contains('championship-active') ? A.getState() : null;
+      let state = A.getState();
       let teams = collectTeams(state);
 
       if (!teams.length) {
         state = await V.championshipRequest('abrirCampeonato', { id:button.dataset.toggleChampionshipTeams });
         teams = collectTeams(state);
-      }
-
-      if (!teams.length && card?.classList.contains('championship-active')) {
-        try {
-          state = await V.request('admin');
-          teams = collectTeams(state);
-        } catch (_) {}
       }
 
       render(target, teams);
