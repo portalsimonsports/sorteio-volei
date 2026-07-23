@@ -2,6 +2,7 @@
   'use strict';
   const page = document.body?.dataset.page || '';
   if (!document.querySelector('link[data-flex-v023]')) { const link=document.createElement('link'); link.rel='stylesheet'; link.href='assets/flex-rankings-v023.css?v=20260723-1900'; link.dataset.flexV023='1'; document.head.appendChild(link); }
+  if (page === 'tenis-mesa-admin') { const script=document.createElement('script'); script.src='assets/flex-tenis-selection-fix-v023.js?v=20260723-1930'; script.defer=true; document.head.appendChild(script); }
   const text = value => String(value ?? '').trim();
   const esc = value => text(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
