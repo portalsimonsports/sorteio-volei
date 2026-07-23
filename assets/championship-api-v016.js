@@ -84,7 +84,11 @@
       const query = new URLSearchParams({ ...params, acao: action, chave: key, callback, _: Date.now() });
       const script = document.createElement('script');
       let done = false;
-      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao acessar o Apps Script.')), 20000);
+      const timeoutMs = action === 'novoCampeonato' ? 120000 : 45000;
+      const timeoutMessage = action === 'novoCampeonato'
+        ? 'O processamento demorou mais que o esperado. O painel verificará se o campeonato foi criado.'
+        : 'Tempo esgotado ao acessar o Apps Script.';
+      const timer = setTimeout(() => finish(new Error(timeoutMessage)), timeoutMs);
 
       function cleanup() {
         clearTimeout(timer);
