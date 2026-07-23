@@ -8,7 +8,7 @@
   let state = V.read();
   [
     'adminMode','adminStatus','drawNow','resetDraw','clearAll','refreshAdmin',
-    'playerForm','playerId','playerName','playerAge','playerScore','playerActive',
+    'playerForm','playerId','playerName','playerAge','playerSex','playerScore','playerActive',
     'categoryPreview','playersTableBody','teamsPreview','matchesAdmin','sheetLink'
   ].forEach(id => ui[id] = document.getElementById(id));
 
@@ -31,16 +31,24 @@
     }
   }
 
+  function sexLabel(value) {
+    if (value === 'M') return 'Masculino';
+    if (value === 'F') return 'Feminino';
+    return 'Pendente';
+  }
+
   function preview() {
     const playerAge = Number(ui.playerAge.value);
     const score = V.num(ui.playerScore.value);
     if (!Number.isInteger(playerAge) || playerAge < 1 || playerAge > 100) {
-      ui.categoryPreview.textContent = 'Informe a idade e a avaliação do jogo. Categoria automática.';
+      ui.categoryPreview.textContent = 'Informe a idade, o sexo e a avaliação do jogo. Categoria automática.';
       return;
     }
     const category = V.category(playerAge);
+    if (ui.playerSex) ui.playerSex.required = category.pot === 'A';
     const warning = score < 5 || score > 10 ? ' A avaliação deve estar entre 5 e 10.' : '';
-    ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label} • Avaliação ${V.fmt(score)}/10 • Índice ${V.fmt(V.index(score))}.${warning}`;
+    const sex = ui.playerSex?.value ? ` • ${sexLabel(ui.playerSex.value)}` : (category.pot === 'A' ? ' • Sexo pendente' : '');
+    ui.categoryPreview.textContent = `${playerAge} anos • Pote ${category.pot} • ${category.label}${sex} • Avaliação ${V.fmt(score)}/10 • Índice ${V.fmt(V.index(score))}.${warning}`;
   }
 
   function addCell(row, text) { row.appendChild(element('td', '', text)); }
@@ -50,7 +58,7 @@
     if (!players.length) {
       const row = element('tr');
       const cell = element('td', '', 'Nenhum participante cadastrado.');
-      cell.colSpan = 8;
+      cell.colSpan = 9;
       row.appendChild(cell);
       ui.playersTableBody.appendChild(row);
       return;
@@ -61,6 +69,7 @@
       addCell(row, player.name);
       addCell(row, player.age);
       addCell(row, player.pot === 'A' ? 'Adulto' : 'Criança');
+      addCell(row, sexLabel(player.sex));
       addCell(row, V.fmt(player.score));
       addCell(row, V.fmt(player.adjustedScore));
       addCell(row, player.active);
@@ -87,7 +96,7 @@
       const card = element('article', 'team card');
       const head = element('div', 'team-head');
       head.append(element('span', '', `DUPLA ${String(index + 1).padStart(2, '0')}`));
-      head.append(element('strong', '', team.type === 'ADULTOS' ? '2 adultos' : team.type === 'CRIANCAS' ? '2 crianças' : 'Mista'));
+      head.append(element('strong', '', team.type === 'ADULTOS' ? '2 adultos do mesmo sexo' : team.type === 'CRIANCAS' ? '2 crianças' : 'Mista'));
       const members = element('div', 'team-members');
       [[team.member1, team.member1Pot, team.member1Index], [team.member2, team.member2Pot, team.member2Index]].forEach(member => {
         const row = element('div', 'team-member');
