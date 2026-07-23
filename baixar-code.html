@@ -4,23 +4,23 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <title>Baixar Code.gs V019</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260723-1230">
+  <title>Baixar Code.gs V021</title>
+  <link rel="stylesheet" href="assets/style.css?v=20260723-1515">
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./"><span class="brand-ball">🏐</span><span class="brand-copy"><strong>Sorteio de Vôlei</strong><small>Gerador do Apps Script</small></span></a>
-    <a class="btn ghost small" href="./admin.html">Voltar ao painel</a>
+    <a class="brand" href="./"><span class="brand-ball">🏐</span><span class="brand-copy"><strong>Portal de Competições</strong><small>Gerador do Apps Script</small></span></a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn ghost small" href="./admin.html">Admin do vôlei</a><a class="btn ghost small" href="./tenis-mesa-admin.html">Admin do tênis de mesa</a></div>
   </header>
   <main class="admin-wrap">
     <section class="admin-hero">
-      <div><span class="kicker">Backend V019</span><h1>Code.gs completo</h1><p>Preserva participantes, equipes, chaveamento e placares ao editar cadastros depois do sorteio; recupera dados pelas abas históricas; não sobrescreve horários personalizados ao executar novamente a configuração; mantém índice histórico, equilíbrio das duplas e cabeças de chave.</p></div>
+      <div><span class="kicker">Backend V021</span><h1>Code.gs completo</h1><p>Inclui o sistema de vôlei e o novo módulo independente de tênis de mesa, com inscrições próprias, seleção livre de participantes, geração de jogos por limites, sets configuráveis, início automático da próxima partida e ranking por pontos e aproveitamento.</p></div>
     </section>
     <section class="panel" style="margin-top:18px;text-align:center">
       <h2>Arquivo pronto para o Google Apps Script</h2>
       <p id="statusDownload">Carregando os módulos atualizados...</p>
-      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V019 em TXT</button>
-      <div class="rule-note">Substitua integralmente o Code.gs, salve e publique uma nova versão. Não é necessário executar CONFIGURAR_SISTEMA_INICIAL.</div>
+      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V021 em TXT</button>
+      <div class="rule-note">Substitua integralmente o Code.gs, salve e publique uma nova versão da implantação. As abas do tênis de mesa já foram criadas na planilha.</div>
     </section>
   </main>
   <script>
@@ -28,7 +28,7 @@
       const files = [
         'Code.gs','Instalacao.gs','Automacao.gs','Cadastro.gs','Desempenho.gs','Equipes.gs',
         'ChaveamentoBase.gs','ChaveamentoDados.gs','ConfiguracaoPartida.gs','SorteioExecucao.gs',
-        'SorteioAtivacao.gs','PlacarRegras.gs','PlacarRegistro.gs','Estado.gs','Campeonatos.gs'
+        'SorteioAtivacao.gs','PlacarRegras.gs','PlacarRegistro.gs','Estado.gs','Campeonatos.gs','TenisMesa.gs'
       ];
       const button = document.getElementById('downloadButton');
       const status = document.getElementById('statusDownload');
@@ -40,7 +40,7 @@
           if (!response.ok) throw new Error(`Não foi possível carregar ${file}.`);
           return `/* ===== ${file} ===== */\n${await response.text()}\n`;
         }));
-        content = `/*\nSORTEIO DE DUPLAS DE VÔLEI — APPS SCRIPT V019\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
+        content = `/*\nPORTAL DE COMPETIÇÕES — APPS SCRIPT V021\nVÔLEI + TÊNIS DE MESA\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
         status.textContent = `${files.length} módulos carregados. Arquivo único disponível.`;
         button.disabled = false;
       }
@@ -50,7 +50,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'SORTEIO_VOLEI_CODE_GS_UNICO_V019.txt';
+        link.download = 'PORTAL_COMPETICOES_CODE_GS_UNICO_V021.txt';
         document.body.appendChild(link);
         link.click();
         link.remove();
