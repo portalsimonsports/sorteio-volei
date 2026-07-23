@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
-  <title>Baixar Code.gs V018</title>
-  <link rel="stylesheet" href="assets/style.css?v=20260723-1030">
+  <title>Baixar Code.gs V019</title>
+  <link rel="stylesheet" href="assets/style.css?v=20260723-1230">
 </head>
 <body>
   <header class="topbar">
@@ -14,13 +14,13 @@
   </header>
   <main class="admin-wrap">
     <section class="admin-hero">
-      <div><span class="kicker">Backend V018</span><h1>Code.gs completo</h1><p>Inclui índice histórico individual, confiança progressiva, desempate por idade, equilíbrio das duplas, cabeças de chave por força, edições de campeonato, histórico permanente, sets configuráveis, horários reais e terceiro lugar.</p></div>
+      <div><span class="kicker">Backend V019</span><h1>Code.gs completo</h1><p>Preserva participantes, equipes, chaveamento e placares ao editar cadastros depois do sorteio; recupera dados pelas abas históricas; não sobrescreve horários personalizados ao executar novamente a configuração; mantém índice histórico, equilíbrio das duplas e cabeças de chave.</p></div>
     </section>
     <section class="panel" style="margin-top:18px;text-align:center">
       <h2>Arquivo pronto para o Google Apps Script</h2>
       <p id="statusDownload">Carregando os módulos atualizados...</p>
-      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V018 em TXT</button>
-      <div class="rule-note">No Apps Script, substitua integralmente o Code.gs, salve e publique uma nova versão da implantação.</div>
+      <button class="btn primary" id="downloadButton" type="button" disabled>Baixar Code.gs V019 em TXT</button>
+      <div class="rule-note">Substitua integralmente o Code.gs, salve e publique uma nova versão. Não é necessário executar CONFIGURAR_SISTEMA_INICIAL.</div>
     </section>
   </main>
   <script>
@@ -40,7 +40,7 @@
           if (!response.ok) throw new Error(`Não foi possível carregar ${file}.`);
           return `/* ===== ${file} ===== */\n${await response.text()}\n`;
         }));
-        content = `/*\nSORTEIO DE DUPLAS DE VÔLEI — APPS SCRIPT V018\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
+        content = `/*\nSORTEIO DE DUPLAS DE VÔLEI — APPS SCRIPT V019\nARQUIVO ÚNICO PARA COLAR INTEGRALMENTE EM Code.gs\n*/\n\n${parts.join('\n')}`;
         status.textContent = `${files.length} módulos carregados. Arquivo único disponível.`;
         button.disabled = false;
       }
@@ -50,7 +50,7 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = 'SORTEIO_VOLEI_CODE_GS_UNICO_V018.txt';
+        link.download = 'SORTEIO_VOLEI_CODE_GS_UNICO_V019.txt';
         document.body.appendChild(link);
         link.click();
         link.remove();
