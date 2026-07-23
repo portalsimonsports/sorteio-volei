@@ -1,0 +1,24 @@
+(() => {
+  'use strict';
+  if (document.body?.dataset.page !== 'admin' || !window.FlexV023) return;
+  const F=window.FlexV023;
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  async function locate(){for(let i=0;i<40;i++){const section=document.getElementById('flexVoleiFree');if(section)return section;await sleep(250);}return null;}
+  async function run(){
+    if(!window.Volei?.championshipRequest)return;
+    const V=window.Volei,section=await locate();if(!section)return;
+    let state=await V.request('admin');
+    document.getElementById('flexScoreModal-volei')?.remove();
+    const modal=F.createScoreModal('volei');
+    const optionHtml=()=>`<option value="">Selecione</option>${(state.players||[]).filter(p=>String(p.active||'SIM').toUpperCase()==='SIM').map(p=>`<option value="${F.esc(p.id)}">${F.esc(p.name)} • ${F.num(p.age)} anos</option>`).join('')}`;
+    section.innerHTML=`<div class="panel-head"><div><span class="kicker">Partidas independentes</span><h2>Jogos avulsos de vôlei</h2><p>Escolha um participante em cada seletor. Não há sorteio e o campeonato ativo não é alterado.</p></div></div><div class="flex-v024-versus"><label>Participante 1<select id="v024VoleiPlayer1">${optionHtml()}</select></label><div class="versus-mark">×</div><label>Participante 2<select id="v024VoleiPlayer2">${optionHtml()}</select></label></div><div class="flex-v023-grid" style="margin-top:12px"><label>Quantidade de jogos iguais<input id="v024VoleiRepeat" type="number" min="1" max="50" value="1"></label><label>Sets<select id="v024VoleiBest"><option value="1">1 set</option><option value="3" selected>Melhor de 3</option><option value="5">Melhor de 5</option></select></label><label>Pontos normais<input id="v024VoleiNormal" type="number" min="1" max="99" value="25"></label><label>Pontos do decisivo<input id="v024VoleiTie" type="number" min="1" max="99" value="15"></label><label>Vantagem mínima<input id="v024VoleiLead" type="number" min="1" max="10" value="2"></label></div><div class="flex-v023-actions"><button class="btn primary" type="button" id="v024VoleiCreate">Criar jogo avulso</button></div><div class="flex-v023-free-list" id="v024VoleiList"></div>`;
+    const p1=section.querySelector('#v024VoleiPlayer1'),p2=section.querySelector('#v024VoleiPlayer2'),button=section.querySelector('#v024VoleiCreate');
+    const render=()=>{const matches=state.freeMatches||[];section.querySelector('#v024VoleiList').innerHTML=matches.length?matches.map(m=>`<article class="flex-v023-free-item"><div><strong>${F.esc(m.team1?.name)} × ${F.esc(m.team2?.name)}</strong><small>Jogo avulso ${F.num(m.order)} • ${F.esc(m.status)} • melhor de ${F.num(m.bestOf)}</small></div><button class="btn secondary small" type="button" data-v024-volei-score="${F.esc(m.id)}">${m.status==='FINALIZADO'?'Ver placar':'Lançar placar'}</button></article>`).join(''):'<div class="flex-v023-empty">Nenhum jogo avulso registrado.</div>';};
+    render();
+    button.addEventListener('click',async()=>{if(!p1.value||!p2.value)return V.toast('Selecione os dois participantes.','warn');if(p1.value===p2.value)return V.toast('Selecione participantes diferentes.','warn');button.disabled=true;try{const result=await V.championshipRequest('novoCampeonato',{tipo:'AVULSO',jogador1:p1.value,jogador2:p2.value,repeticoesConfronto:section.querySelector('#v024VoleiRepeat').value,melhorDe:section.querySelector('#v024VoleiBest').value,pontosNormal:section.querySelector('#v024VoleiNormal').value,pontosDesempate:section.querySelector('#v024VoleiTie').value,vantagemMinima:section.querySelector('#v024VoleiLead').value});state=result.state||await V.request('admin');V.toast(result.message);render();}catch(error){V.toast(error.message,'error');}finally{button.disabled=false;}});
+    section.addEventListener('click',event=>{const target=event.target.closest('[data-v024-volei-score]');if(!target)return;const match=(state.freeMatches||[]).find(m=>m.id===target.dataset.v024VoleiScore);if(match)F.fillScoreModal(modal,match,false);});
+    modal.querySelector('[data-score-start]').addEventListener('click',async()=>{try{const result=await V.championshipRequest('novoCampeonato',{tipo:'AVULSO_INICIAR',id:modal.dataset.matchId});state=result.state||await V.request('admin');V.toast(result.message);modal.hidden=true;render();}catch(error){V.toast(error.message,'error');}});
+    modal.querySelector('[data-score-save]').addEventListener('click',async()=>{const match=(state.freeMatches||[]).find(m=>m.id===modal.dataset.matchId);if(!match)return;try{const result=await V.championshipRequest('novoCampeonato',{tipo:'AVULSO_RESULTADO',id:match.id,payload:JSON.stringify({scores:F.scoresFromModal(modal,match.bestOf)})});V.toast(result.message);modal.hidden=true;setTimeout(()=>location.reload(),500);}catch(error){V.toast(error.message,'error');}});
+  }
+  run().catch(error=>console.error('Vôlei avulso V024:',error));
+})();
