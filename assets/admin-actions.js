@@ -33,10 +33,16 @@
   ui.playerForm.addEventListener('submit', async event => {
     event.preventDefault();
     const playerAge = Number(ui.playerAge.value);
+    if (playerAge >= 18 && !ui.playerSex.value) {
+      V.toast('Informe o sexo do participante adulto.', 'warn');
+      ui.playerSex.focus();
+      return;
+    }
     const params = {
       id: ui.playerId.value,
       nome: ui.playerName.value,
       idade: playerAge,
+      sexo: ui.playerSex.value,
       dataNascimento: V.syntheticBirthDate(playerAge),
       nota: ui.playerScore.value,
       notaAnterior: ui.playerScore.dataset.originalScore || '',
@@ -54,10 +60,11 @@
     A.busy(button, true, 'Salvando...');
     try {
       const result = await V.request('salvarJogador', params);
-      V.toast('Participante salvo.');
+      V.toast(result?.message || 'Participante salvo.');
       ui.playerForm.reset();
       ui.playerId.value = '';
       ui.playerActive.value = 'SIM';
+      ui.playerSex.value = '';
       delete ui.playerScore.dataset.originalScore;
       delete ui.playerScore.dataset.originalAdjusted;
       A.preview();
@@ -70,6 +77,7 @@
   });
 
   ui.playerAge.addEventListener('input', A.preview);
+  ui.playerSex.addEventListener('change', A.preview);
   ui.playerScore.addEventListener('input', A.preview);
 
   ui.playersTableBody.addEventListener('click', async event => {
@@ -82,6 +90,7 @@
       ui.playerId.value = player.id;
       ui.playerName.value = player.name;
       ui.playerAge.value = player.age;
+      ui.playerSex.value = player.sex || '';
       ui.playerScore.value = V.ratingEditValue ? V.ratingEditValue(player) : player.score;
       ui.playerScore.dataset.originalScore = String(player.score);
       ui.playerScore.dataset.originalAdjusted = String(player.adjustedScore);
