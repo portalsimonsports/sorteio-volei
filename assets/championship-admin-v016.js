@@ -31,11 +31,47 @@
     return 'Automático pela quantidade de duplas';
   }
 
+  function safeId(value) {
+    return text(value).replace(/[^0-9A-Za-z_-]/g, '_');
+  }
+
+  function teamMembers(team) {
+    const members = [];
+    if (text(team?.member1)) members.push({ name:text(team.member1), pot:text(team.member1Pot) });
+    if (text(team?.member2)) members.push({ name:text(team.member2), pot:text(team.member2Pot) });
+    if (!members.length && text(team?.adult)) members.push({ name:text(team.adult), pot:'A' });
+    if (!members.some(member => member.name === text(team?.child)) && text(team?.child)) members.push({ name:text(team.child), pot:'B' });
+    return members;
+  }
+
+  function memberLabel(member) {
+    if (member.pot === 'A') return `Adulto: ${member.name}`;
+    if (member.pot === 'B') return `Criança: ${member.name}`;
+    return member.name;
+  }
+
+  function renderChampionshipTeams(target, state) {
+    const teams = Array.isArray(state?.teams) ? state.teams : [];
+    target.innerHTML = teams.length
+      ? `<div class="championship-teams-title"><strong>Duplas desta edição</strong><span>${teams.length} dupla${teams.length === 1 ? '' : 's'}</span></div>
+         <div class="championship-teams-grid">${teams.map((team, index) => {
+           const members = teamMembers(team);
+           const name = V.teamName(team) || members.map(member => member.name).join(' + ') || team.id || `Dupla ${index + 1}`;
+           return `<article class="championship-team-card">
+             <span>DUPLA ${String(index + 1).padStart(2, '0')}</span>
+             <strong>${V.esc(name)}</strong>
+             <small>${members.map(member => V.esc(memberLabel(member))).join(' • ')}</small>
+           </article>`;
+         }).join('')}</div>`
+      : '<div class="empty">Nenhuma dupla foi encontrada no histórico desta edição.</div>';
+  }
+
   function renderHistory() {
     historyStatus.textContent = `${championships.length} campeonato${championships.length === 1 ? '' : 's'} preservado${championships.length === 1 ? '' : 's'}`;
     historyTarget.innerHTML = championships.length
-      ? championships.map(item => `
-          <article class="championship-history-card ${item.active === 'SIM' ? 'championship-active' : ''}">
+      ? championships.map(item => {
+          const targetId = `championship-teams-${safeId(item.id)}`;
+          return `<article class="championship-history-card ${item.active === 'SIM' ? 'championship-active' : ''}">
             <div class="championship-history-head">
               <div><span>${item.active === 'SIM' ? 'EDIÇÃO ATIVA' : 'HISTÓRICO'}</span><strong>${V.esc(item.name || item.id)}</strong></div>
               <b>${V.esc(item.status || 'ARQUIVADO')}</b>
@@ -45,8 +81,13 @@
               <span>${V.esc(modelLabel(item.bracketModel))}</span>
               <span>${dateText(item.finishedAt || item.createdAt)}</span>
             </div>
-            <button class="btn secondary small" type="button" data-open-championship="${V.esc(item.id)}">${item.active === 'SIM' ? 'Ver edição atual' : 'Ver chaveamento preservado'}</button>
-          </article>`).join('')
+            <div class="championship-history-actions">
+              <button class="btn secondary small" type="button" data-toggle-championship-teams="${V.esc(item.id)}" data-target="${targetId}">Ver duplas</button>
+              <button class="btn light small" type="button" data-open-championship="${V.esc(item.id)}">${item.active === 'SIM' ? 'Ver edição atual' : 'Ver chaveamento preservado'}</button>
+            </div>
+            <div class="championship-teams-panel" id="${targetId}" hidden></div>
+          </article>`;
+        }).join('')
       : '<div class="empty">Nenhum campeonato arquivado. O campeonato atual será preservado automaticamente ao criar uma nova edição.</div>';
   }
 
@@ -101,6 +142,31 @@
   });
 
   historyTarget.addEventListener('click', async event => {
+    const teamButton = event.target.closest('[data-toggle-championship-teams]');
+    if (teamButton) {
+      const target = document.getElementById(teamButton.dataset.target);
+      if (!target) return;
+      if (target.dataset.loaded === 'SIM') {
+        target.hidden = !target.hidden;
+        teamButton.textContent = target.hidden ? 'Ver duplas' : 'Ocultar duplas';
+        return;
+      }
+
+      A.busy(teamButton, true, 'Carregando duplas...');
+      try {
+        const state = await V.championshipRequest('abrirCampeonato', { id:teamButton.dataset.toggleChampionshipTeams });
+        renderChampionshipTeams(target, state);
+        target.dataset.loaded = 'SIM';
+        target.hidden = false;
+        teamButton.textContent = 'Ocultar duplas';
+      } catch (error) {
+        V.toast(error.message, 'error');
+      } finally {
+        A.busy(teamButton, false);
+      }
+      return;
+    }
+
     const button = event.target.closest('[data-open-championship]');
     if (!button) return;
     const id = button.dataset.openChampionship;
@@ -109,7 +175,7 @@
       const state = await V.championshipRequest('abrirCampeonato', { id });
       setHistoryMode(item?.active !== 'SIM', item?.name || id);
       A.render(V.normalizeState(state));
-      document.getElementById('matchesAdmin')?.scrollIntoView({ behavior:'smooth', block:'start' });
+      document.getElementById('teamsPreview')?.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch (error) {
       V.toast(error.message, 'error');
     }
