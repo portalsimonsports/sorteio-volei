@@ -3,13 +3,16 @@
   if (document.body?.dataset.page !== 'public' || !window.Volei) return;
   const V = window.Volei, section = document.getElementById('classificacao'), target = document.getElementById('finalRankingRows'), status = document.getElementById('rankingStatus');
   if (!section || !target) return;
+  let lastState = null, rendering = false;
   const name = team => V.teamName(team) || team?.id || 'Equipe';
   const medal = position => position === 1 ? '🏆' : position === 2 ? '🥈' : position === 3 ? '🥉' : `${position}º`;
 
   function renderRows(rows, label) {
+    rendering = true;
     section.hidden = false;
     if (status) status.textContent = label;
     target.innerHTML = rows.map(item => `<article class="ranking-row ranking-position-${item.position}"><div class="ranking-summary" style="cursor:default"><span class="ranking-position">${medal(item.position)}</span><span class="ranking-team"><strong>${V.esc(name(item.team))}</strong><small>${item.games} jogo${item.games === 1 ? '' : 's'} • ${item.wins} vitória${item.wins === 1 ? '' : 's'} • ${item.losses} derrota${item.losses === 1 ? '' : 's'} • Sets ${item.setsFor}–${item.setsAgainst}</small></span><span class="ranking-label">${Number(item.points || 0)} pts • ${Number(item.winRate || 0).toLocaleString('pt-BR')}%</span></div></article>`).join('');
+    queueMicrotask(() => { rendering = false; });
   }
 
   function aggregateTwoFinals(state) {
@@ -27,7 +30,13 @@
     return [...map.values()].map(item => ({ ...item, setDiff:item.setsFor-item.setsAgainst, pointDiff:item.pointsFor-item.pointsAgainst, winRate:item.games ? Math.round(item.wins*1000/item.games)/10 : 0, points:item.wins*2 })).sort((a,b) => b.wins-a.wins || b.setDiff-a.setDiff || b.pointDiff-a.pointDiff || b.pointsFor-a.pointsFor || (b.team.id === secondWinner ? 1 : -1)).map((item,index) => ({ ...item, position:index+1 }));
   }
 
+  function isAlternativeRanking(state) {
+    const matches = (state?.rounds || []).flatMap(round => round.matches || []);
+    return state?.competition?.format === 'TODOS_CONTRA_TODOS' || matches.filter(match => /^FINAL\s+[12]$/i.test(String(match.phase || ''))).length === 2;
+  }
+
   function render(state) {
+    lastState = state;
     const matches = (state.rounds || []).flatMap(round => round.matches || []), hasStandardFinal = matches.some(match => String(match.phase || '').toUpperCase() === 'FINAL');
     const twoFinals = matches.filter(match => /^FINAL\s+[12]$/i.test(String(match.phase || '')));
     if (twoFinals.length === 2 && state.status === 'FINALIZADO') { const rows = aggregateTwoFinals(state); if (rows.length) renderRows(rows, 'Classificação após duas finais'); return; }
@@ -35,6 +44,10 @@
     const rows = Array.isArray(state.competition?.standings) ? state.competition.standings : [];
     if (rows.length) renderRows(rows, state.status === 'FINALIZADO' ? 'Classificação final' : 'Classificação da fase todos contra todos');
   }
+
+  new MutationObserver(() => {
+    if (!rendering && section.hidden && lastState && isAlternativeRanking(lastState)) render(lastState);
+  }).observe(section, { attributes:true, attributeFilter:['hidden'] });
 
   async function refresh() { try { render(await V.request('estado')); } catch (_) {} }
   refresh(); setInterval(refresh, 10000);
