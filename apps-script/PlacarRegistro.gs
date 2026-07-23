@@ -1,4 +1,4 @@
-/** Registro do placar, avanço e formatos de competição — V022 */
+/** Registro do placar, avanço e formatos de competição — V024 */
 function registrarResultado_(jogo,payload){
  jogo=numero_(jogo);if(!jogo)throw Error('Informe o jogo.');const resultado=validarPlacar_(payload),s=aba_(VOLEI.SHEETS.CHAVEAMENTO),l=s.getLastRow();if(l<2)throw Error('Chaveamento ainda não foi criado.');
  let dados=s.getRange(2,1,l-1,24).getValues(),i=dados.findIndex(r=>numero_(r[1])===jogo);if(i<0)throw Error('Jogo não encontrado.');const r=dados[i],status=texto_(r[16]);if(!r[3]||!r[5])throw Error('As duas equipes ainda não estão definidas para esta partida.');if(status==='FINALIZADO')throw Error('Esta partida já foi finalizada.');
@@ -16,6 +16,7 @@ function registrarResultado_(jogo,payload){
  else if(!finalizada){const torneio=ultimoSorteio_();if(torneio){aba_(VOLEI.SHEETS.SORTEIOS).getRange(torneio.row,2).setValue('EM_ANDAMENTO');aba_(VOLEI.SHEETS.SORTEIOS).getRange(torneio.row,12).setValue('Competição em andamento.');}}
  if(finalizada&&typeof atualizarCampeonatoFinalizado_==='function')atualizarCampeonatoFinalizado_();const resumo=resultado.scores.filter(x=>x&&x[0]!=null&&x[1]!=null).map(x=>x[0]+'-'+x[1]).join(', ');
  log_('PLACAR_REGISTRADO',texto_(r[0]),'PAINEL_WEB','ADMIN','Jogo '+jogo+' | '+resumo+' | Início '+formatarData_(inicio)+' | Término '+formatarData_(agora)+' | Vencedor '+vencedorId,'INFO',String(jogo));
+ try{atualizarIndicesHistoricos_();}catch(erro){log_('INDICE_ATUALIZACAO_PENDENTE',texto_(r[0]),'SISTEMA','SISTEMA',erro.message,'ALERTA',String(jogo));}
  return{message:finalizada?(especial.message||'Placar registrado. Competição encerrada e arquivada.'):'Placar registrado. Próxima partida liberada em '+intervalo+' minutos.',state:obterEstadoAdmin_()};
 }
 function prioridadePartida_(r){const fase=texto_(r[2]).toUpperCase();if(fase==='REPESCAGEM')return numero_(r[1])-100;if(fase==='DISPUTA DE 3º LUGAR')return-2;if(fase==='FINAL')return-1;return numero_(r[1]);}
