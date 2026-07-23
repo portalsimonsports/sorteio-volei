@@ -19,6 +19,7 @@
   let championships = [];
 
   function text(value) { return String(value ?? '').trim(); }
+  function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
   function dateText(value) {
     if (!value) return '—';
@@ -97,9 +98,11 @@
       const result = await V.championshipRequest('listarCampeonatos');
       championships = Array.isArray(result) ? result : [];
       renderHistory();
+      return championships;
     } catch (error) {
       historyStatus.textContent = 'Histórico indisponível';
       historyTarget.innerHTML = `<div class="message error">${V.esc(error.message)}</div>`;
+      throw error;
     }
   }
 
@@ -135,6 +138,23 @@
       await loadHistory();
       document.getElementById('matchesAdmin')?.scrollIntoView({ behavior:'smooth', block:'start' });
     } catch (error) {
+      const processingTimeout = /processamento demorou|tempo esgotado/i.test(text(error?.message));
+      if (processingTimeout) {
+        V.toast('O processamento continua. Verificando se o campeonato foi criado...');
+        await wait(4000);
+        try {
+          await loadHistory();
+          const created = championships.find(item => item.active === 'SIM' && text(item.name) === name);
+          if (created) {
+            setHistoryMode(false);
+            await A.refresh();
+            nameInput.value = '';
+            V.toast(`${created.name} criado corretamente.`);
+            document.getElementById('matchesAdmin')?.scrollIntoView({ behavior:'smooth', block:'start' });
+            return;
+          }
+        } catch (_) {}
+      }
       V.toast(error.message, 'error');
     } finally {
       A.busy(createButton, false);
@@ -194,5 +214,5 @@
       : 'O sistema calcula automaticamente fases preliminares, quartas, semifinais, terceiro lugar e final conforme a quantidade de duplas.';
   });
 
-  loadHistory();
+  loadHistory().catch(() => {});
 })();
