@@ -1,5 +1,5 @@
 window.VOLEI_CONFIG = Object.freeze({
-  APP_NAME: 'Sorteio de Duplas de Vôlei',
+  APP_NAME: 'Competição de Vôlei',
   API_BASE: 'https://script.google.com/macros/s/AKfycbwxiWDeoeSz-pbI2W8f1AlGKFhS9Xn6A4_Svt5s66wQPdv4khfJeBQWT9WF13sEqt6c/exec',
   SHEET_ID: '1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo',
   SHEET_URL: 'https://docs.google.com/spreadsheets/d/1lg0HKljL93wD5riajKbCYcShzKYW0qAVYkPTwjerVAo/edit',
@@ -34,6 +34,9 @@ window.VOLEI_CONFIG = Object.freeze({
   HISTORICAL_INDEX: true,
   BALANCED_SEEDING: true,
   PRESERVE_OPERATIONAL_DATA: true,
+  VOLLEYBALL_TEAM_SIZES: Object.freeze([2, 3, 4, 5, 6]),
+  VOLLEYBALL_FORMATS: Object.freeze(['MATA_MATA', 'TODOS_CONTRA_TODOS']),
+  TWO_TEAM_FINALS: 2,
   TABLE_TENNIS_DEFAULTS: Object.freeze({ BEST_OF: 3, SET_POINTS: 11, MINIMUM_LEAD: 2, WIN_POINTS: 3, LOSS_POINTS: 0, AUTO_START_NEXT: true }),
-  VERSION: 'V021_TENIS_MESA_2026-07-23'
+  VERSION: 'V022_VOLEI_EQUIPES_FORMATOS_2026-07-23'
 });
