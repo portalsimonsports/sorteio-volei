@@ -2,6 +2,7 @@
   'use strict';
   if (document.body?.dataset.page !== 'admin' || !window.Volei) return;
   const V = window.Volei;
+  const A = window.VoleiAdmin;
   const target = document.getElementById('v035Championships');
   const counter = document.getElementById('v035ChampionshipsStatus');
   if (!target) return;
@@ -42,14 +43,16 @@
     };
     if (Array.isArray(team?.members)) team.members.forEach(member => add(typeof member === 'string' ? member : member?.name));
     [team?.member1,team?.member2,team?.adult,team?.child,team?.jogador1,team?.jogador2].forEach(add);
+    if (!names.length && team?.name) add(team.name);
     return names;
   }
 
   function teamName(team) {
     if (!team) return 'A definir';
-    if (team.name) return String(team.name);
     const members = teamMembers(team);
-    return members.length ? members.join(' + ') : String(V.teamName?.(team) || team.id || 'A definir');
+    if (members.length) return members.join(' + ');
+    if (team.name) return String(team.name);
+    return String(V.teamName?.(team) || team.id || 'A definir');
   }
 
   function flattenMatches(source) {
@@ -57,6 +60,7 @@
     (Array.isArray(source?.rounds) ? source.rounds : []).forEach(round => {
       (Array.isArray(round?.matches) ? round.matches : []).forEach(match => out.push(match));
     });
+    if (!out.length && Array.isArray(source?.matches)) source.matches.forEach(match => out.push(match));
     return out;
   }
 
@@ -67,20 +71,56 @@
     return 'Sem placar';
   }
 
-  function renderDetail(panel, source) {
+  function groupForId(source, id) {
+    return (Array.isArray(source?.championshipTeams) ? source.championshipTeams : []).find(group => String(group?.id || '') === String(id)) || null;
+  }
+
+  function mergeView(id, ...sources) {
+    const result = { championship: items.find(item => String(item.id) === String(id)) || null, teams: [], rounds: [], matches: [] };
+    const teamMap = new Map();
+    const roundMap = new Map();
+    const addTeams = list => (Array.isArray(list) ? list : []).forEach((team,index) => {
+      const key = String(team?.id || teamName(team) || index);
+      if (!teamMap.has(key)) teamMap.set(key, team);
+    });
+    const addRounds = list => (Array.isArray(list) ? list : []).forEach((round,index) => {
+      const key = String(round?.index ?? round?.name ?? index);
+      if (!roundMap.has(key)) roundMap.set(key, round);
+    });
+
+    sources.filter(Boolean).forEach(source => {
+      const sourceChampId = String(source?.championship?.id || '');
+      const exact = sourceChampId && sourceChampId === String(id);
+      const group = groupForId(source,id);
+      if (group) addTeams(group.teams);
+      if (exact || String(id) === currentId()) {
+        addTeams(source.teams);
+        addRounds(source.rounds);
+        if (!result.championship && source.championship) result.championship = source.championship;
+      }
+    });
+
+    result.teams = [...teamMap.values()];
+    result.rounds = [...roundMap.values()];
+    result.matches = flattenMatches(result);
+    return result;
+  }
+
+  function renderDetail(panel, source, expectedTeamCount = 0) {
     const teams = Array.isArray(source?.teams) ? source.teams : [];
     const matches = flattenMatches(source);
+    const missingTeams = !teams.length && expectedTeamCount > 0;
     panel.innerHTML = `
       <div class="v035-detail-block">
-        <div class="v035-detail-head"><strong>Equipes</strong><span>${teams.length}</span></div>
+        <div class="v035-detail-head"><strong>Equipes</strong><span>${teams.length || expectedTeamCount}</span></div>
         <div class="v035-detail-teams">${teams.length ? teams.map((team,index) => {
           const members = teamMembers(team);
           return `<article><span>EQUIPE ${String(index+1).padStart(2,'0')}</span><strong>${esc(teamName(team))}</strong>${members.length ? `<small>${esc(members.join(' • '))}</small>` : ''}</article>`;
-        }).join('') : '<div class="v035-empty">Nenhuma equipe registrada nesta edição.</div>'}</div>
+        }).join('') : `<div class="v035-empty">${missingTeams ? 'As equipes existem nesta edição, mas os integrantes ainda não foram carregados. Toque em Ocultar e Ver novamente.' : 'Nenhuma equipe registrada nesta edição.'}</div>`}</div>
       </div>
       <div class="v035-detail-block">
         <div class="v035-detail-head"><strong>Jogos</strong><span>${matches.length}</span></div>
-        <div class="v035-detail-games">${matches.length ? matches.map(match => `<article><div><span>JOGO ${n(match.game)}${match.phase ? ` • ${esc(match.phase)}` : ''}</span><strong>${esc(teamName(match.team1))} × ${esc(teamName(match.team2))}</strong></div><div class="v035-game-result"><b>${esc(scoreText(match))}</b><small>${esc(statusText(match.status))}</small></div></article>`).join('') : '<div class="v035-empty">Nenhum jogo registrado nesta edição.</div>'}</div>
+        <div class="v035-detail-games">${matches.length ? matches.map(match => `<article><div><span>JOGO ${n(match.game)}${match.phase ? ` • ${esc(match.phase)}` : ''}</span><strong>${esc(teamName(match.team1))} × ${esc(teamName(match.team2))}</strong></div><div class="v035-game-result"><b>${esc(scoreText(match))}</b><small>${esc(statusText(match.status))}</small></div></article>`).join('') : '<div class="v035-empty">Nenhum jogo carregado nesta edição.</div>'}</div>
       </div>`;
   }
 
@@ -123,6 +163,7 @@
     event.stopPropagation();
 
     const id = String(button.dataset.v035Open || '');
+    const item = items.find(entry => String(entry.id) === id) || {};
     const panel = target.querySelector(`[data-v035-detail="${CSS.escape(id)}"]`);
     if (!panel) return;
 
@@ -138,7 +179,7 @@
     button.textContent = 'Ocultar';
 
     if (detailCache.has(id)) {
-      renderDetail(panel, detailCache.get(id));
+      renderDetail(panel, detailCache.get(id), n(item.teamCount));
       panel.scrollIntoView({behavior:'smooth',block:'nearest'});
       return;
     }
@@ -146,15 +187,25 @@
     panel.innerHTML = '<div class="v035-empty">Carregando equipes e jogos...</div>';
     button.disabled = true;
     try {
-      let opened;
-      if (id === currentId() && state) {
-        opened = state;
-      } else {
-        opened = await V.championshipRequest('abrirCampeonato',{id});
+      let opened = mergeView(id, A?.getState?.(), state, V.read?.());
+
+      if (id === currentId() && (!opened.teams.length || !opened.rounds.length)) {
+        try {
+          const publicState = await V.request('estado');
+          opened = mergeView(id, opened, publicState, A?.getState?.(), state);
+        } catch (_) {}
       }
+
+      if ((!opened.teams.length || !opened.rounds.length)) {
+        try {
+          const direct = await V.championshipRequest('abrirCampeonato',{id});
+          opened = mergeView(id, opened, direct, A?.getState?.(), state);
+        } catch (_) {}
+      }
+
       if (!opened || typeof opened !== 'object') throw new Error('A edição não retornou dados para visualização.');
       detailCache.set(id, opened);
-      renderDetail(panel, opened);
+      renderDetail(panel, opened, n(item.teamCount));
       panel.scrollIntoView({behavior:'smooth',block:'nearest'});
     } catch (error) {
       panel.innerHTML = `<div class="v035-empty error">${esc(error.message || 'Falha ao abrir a edição.')}</div>`;
