@@ -52,12 +52,20 @@
     } catch (_) { return result; }
   }
 
+  function clickRefresh(delay = 80) {
+    setTimeout(() => document.getElementById('tmRefresh')?.click(), delay);
+  }
+
   function scheduleFullRefresh(result) {
     if (result?.partial) return;
-    const refresh = () => setTimeout(() => document.getElementById('tmRefresh')?.click(), 120);
+    // Libera a interface imediatamente usando o jogo já salvo no cache.
+    clickRefresh(80);
+    // O ranking do campeonato é recalculado depois, sem segurar o botão de placar.
     if (result?.rankingRefreshRequired && result?.championshipId) {
-      base.request('tmRecalcularRankingRapido', { campeonatoId: result.championshipId }).catch(() => {}).finally(refresh);
-    } else refresh();
+      base.request('tmRecalcularRankingRapido', { campeonatoId: result.championshipId })
+        .catch(() => {})
+        .finally(() => clickRefresh(80));
+    }
   }
 
   function saveOnce(action, params = {}, retryingKey = false) {
