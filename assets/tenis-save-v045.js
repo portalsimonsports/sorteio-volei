@@ -28,11 +28,12 @@
       });
       let key;
       try { key = adminKey(retryingKey); } catch (error) { reject(error); return; }
-      const callback = `__tmSave45_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const query = new URLSearchParams({ ...clean, acao: action, chave: key, callback, _: Date.now() });
+      const callback = `__tmSave47_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const remoteAction = action === 'tmSalvarPlacarAutomatico' ? 'tmSalvarPlacarRapido' : action;
+      const query = new URLSearchParams({ ...clean, acao: remoteAction, chave: key, callback, _: Date.now() });
       const script = document.createElement('script');
       let done = false;
-      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao salvar o placar. A gravação não será repetida automaticamente.')), 90000);
+      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao salvar o placar. A gravação não será repetida automaticamente.')), 35000);
       function cleanup() { clearTimeout(timer); script.remove(); try { delete window[callback]; } catch (_) { window[callback] = undefined; } }
       function finish(error, value) { if (done) return; done = true; cleanup(); error ? reject(error) : resolve(value); }
       window[callback] = payload => {
