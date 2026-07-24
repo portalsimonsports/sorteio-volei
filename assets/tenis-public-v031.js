@@ -13,6 +13,11 @@
   const empty = text => `<div class="tm-empty">${esc(text)}</div>`;
   const scoreText = match => Array.isArray(match.scores) && match.scores.length ? `${match.scores.map(set => `${num(set[0])}–${num(set[1])}`).join(' | ')} • Sets ${num(match.sets1)} × ${num(match.sets2)}` : 'Placar ainda não registrado';
 
+  function rankingPrincipal(data){
+    const global = Array.isArray(data?.globalRankingPoints) ? data.globalRankingPoints.filter(item => num(item.games) > 0) : [];
+    return global.length ? global : (Array.isArray(data?.ranking) ? data.ranking : []);
+  }
+
   function renderRanking(ranking = []) {
     if (!ui.tmRanking) return;
     if (!ranking.length) { ui.tmRanking.innerHTML = empty('O ranking aparecerá após os primeiros resultados.'); return; }
@@ -36,7 +41,7 @@
   }
   function render(data, note = '') {
     state = data || {};
-    const champ = state.championship, ranking = state.ranking || [], matches = state.matches || [];
+    const champ = state.championship, ranking = rankingPrincipal(state), matches = state.matches || [];
     if (ui.tmConnection) ui.tmConnection.textContent = note || (state._fallback ? 'Exibindo os últimos dados disponíveis' : 'Dados atualizados');
     if (ui.tmChampionshipName) ui.tmChampionshipName.textContent = champ?.name || 'Nenhum campeonato ativo';
     if (ui.tmChampionshipMessage) ui.tmChampionshipMessage.textContent = champ?.message || 'As inscrições estão abertas. O próximo campeonato ainda não foi gerado.';
