@@ -1,4 +1,4 @@
-/** TÊNIS DE MESA — SALVAMENTO RÁPIDO DE PLACAR — V049 */
+/** TÊNIS DE MESA — PLACAR RÁPIDO E RECORTES DE RANKING — V050 */
 function tm47AtualizarStatusCampeonato_(champ,status,message){
   if(!champ||texto_(champ.status)===status)return;
   champ.status=status;champ.message=message||champ.message;
@@ -48,7 +48,20 @@ function tm47RecalcularRanking_(p){
   tmAtualizarRanking_(champ.id);pa31LimparCacheTm_();
   return{message:'Ranking atualizado.',championshipId:champ.id};
 }
+function tm50RankingAvulso_(){
+  const stats={};
+  tmLerJogadores_().forEach(j=>stats[j.id]={id:j.id,name:j.name,games:0,wins:0,losses:0,points:0,setsFor:0,setsAgainst:0,pointsFor:0,pointsAgainst:0});
+  function add(id,won,sf,sa,pf,pa,pts){const x=stats[id];if(!x)return;x.games++;if(won)x.wins++;else x.losses++;x.points+=numero_(pts);x.setsFor+=numero_(sf);x.setsAgainst+=numero_(sa);x.pointsFor+=numero_(pf);x.pointsAgainst+=numero_(pa);}
+  flexTmLerAvulsos_().filter(g=>g.status==='FINALIZADO'&&g.winnerId).forEach(g=>{const p1=g.scores.reduce((t,s)=>t+numero_(s[0]),0),p2=g.scores.reduce((t,s)=>t+numero_(s[1]),0);add(g.player1Id,g.winnerId===g.player1Id,g.sets1,g.sets2,p1,p2,g.winnerId===g.player1Id?g.winPoints:g.lossPoints);add(g.player2Id,g.winnerId===g.player2Id,g.sets2,g.sets1,p2,p1,g.winnerId===g.player2Id?g.winPoints:g.lossPoints);});
+  const list=Object.values(stats).filter(x=>x.games>0).map(x=>Object.assign(x,{winRate:x.games?Math.round(x.wins*1000/x.games)/10:0,setDiff:x.setsFor-x.setsAgainst,pointDiff:x.pointsFor-x.pointsAgainst}));
+  return flexOrdenarRanking_(list,'PONTOS');
+}
+function tm50RankingEscopos_(){
+  const champs=tmLerCampeonatos_().slice().reverse().map(c=>({id:c.id,name:c.name,status:c.status,createdAt:c.createdAt,ranking:tmLerRanking_(c.id)}));
+  return{general:flexOrdenarRanking_(flexTmRankingGlobal_(),'PONTOS'),free:tm50RankingAvulso_(),championships:champs};
+}
 function tm47Salvar_(p){return texto_(p.tipo||'CAMPEONATO').toUpperCase()==='AVULSO'?tm47SalvarAvulso_(p):tm47SalvarCampeonato_(p);}
-function tm47Responder_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47Salvar_(p),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}}
-function tm47ResponderEstado_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47EstadoPlacar_(),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}}
-function tm47ResponderRanking_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47RecalcularRanking_(p),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V049',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47Responder_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47Salvar_(p),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47ResponderEstado_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47EstadoPlacar_(),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47ResponderRanking_(p){try{exigirAdmin_(p.chave);return responder_({ok:true,dados:tm47RecalcularRanking_(p),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}}
+function tm50ResponderEscopos_(p){try{return responder_({ok:true,dados:tm50RankingEscopos_(),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V050',dataHora:formatarData_(new Date())},p.callback);}}
