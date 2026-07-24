@@ -50,13 +50,19 @@
     updateSelectedCount();
   }
 
+  function rankingPrincipal() {
+    const global = Array.isArray(state.globalRankingPoints) ? state.globalRankingPoints.filter(item => Number(item.games || 0) > 0) : [];
+    return global.length ? global : (state.ranking || []);
+  }
+
   function renderRanking() {
     ui.tmAdminRanking.replaceChildren();
-    if (!state.ranking?.length) {
+    const ranking = rankingPrincipal();
+    if (!ranking.length) {
       ui.tmAdminRanking.appendChild(empty('Ranking aguardando jogos.'));
       return;
     }
-    state.ranking.forEach(item => {
+    ranking.forEach(item => {
       const row = document.createElement('article');
       row.className = `tm-rank-row top-${item.position}`;
       row.innerHTML = `
