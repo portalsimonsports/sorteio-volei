@@ -1,5 +1,6 @@
-/** Registro do placar, avanço e formatos de competição — V024 */
-function registrarResultado_(jogo,payload){
+/** Registro do placar, avanço e formatos de competição — V049 */
+function registrarResultado_(jogo,payload,opcoes){
+ const rapido=!!(opcoes&&opcoes.rapido);
  jogo=numero_(jogo);if(!jogo)throw Error('Informe o jogo.');const resultado=validarPlacar_(payload),s=aba_(VOLEI.SHEETS.CHAVEAMENTO),l=s.getLastRow();if(l<2)throw Error('Chaveamento ainda não foi criado.');
  let dados=s.getRange(2,1,l-1,24).getValues(),i=dados.findIndex(r=>numero_(r[1])===jogo);if(i<0)throw Error('Jogo não encontrado.');const r=dados[i],status=texto_(r[16]);if(!r[3]||!r[5])throw Error('As duas equipes ainda não estão definidas para esta partida.');if(status==='FINALIZADO')throw Error('Esta partida já foi finalizada.');
  const disponivel=r[18]?interpretarData_(r[18]):null,agora=new Date();if(disponivel&&agora.getTime()<disponivel.getTime())throw Error('Respeite o intervalo. Esta partida estará liberada em '+formatarData_(disponivel)+'.');
@@ -16,8 +17,10 @@ function registrarResultado_(jogo,payload){
  else if(!finalizada){const torneio=ultimoSorteio_();if(torneio){aba_(VOLEI.SHEETS.SORTEIOS).getRange(torneio.row,2).setValue('EM_ANDAMENTO');aba_(VOLEI.SHEETS.SORTEIOS).getRange(torneio.row,12).setValue('Competição em andamento.');}}
  if(finalizada&&typeof atualizarCampeonatoFinalizado_==='function')atualizarCampeonatoFinalizado_();const resumo=resultado.scores.filter(x=>x&&x[0]!=null&&x[1]!=null).map(x=>x[0]+'-'+x[1]).join(', ');
  log_('PLACAR_REGISTRADO',texto_(r[0]),'PAINEL_WEB','ADMIN','Jogo '+jogo+' | '+resumo+' | Início '+formatarData_(inicio)+' | Término '+formatarData_(agora)+' | Vencedor '+vencedorId,'INFO',String(jogo));
- try{atualizarIndicesHistoricos_();}catch(erro){log_('INDICE_ATUALIZACAO_PENDENTE',texto_(r[0]),'SISTEMA','SISTEMA',erro.message,'ALERTA',String(jogo));}
- return{message:finalizada?(especial.message||'Placar registrado. Competição encerrada e arquivada.'):'Placar registrado. Próxima partida liberada em '+intervalo+' minutos.',state:obterEstadoAdmin_()};
+ if(!rapido){try{atualizarIndicesHistoricos_();}catch(erro){log_('INDICE_ATUALIZACAO_PENDENTE',texto_(r[0]),'SISTEMA','SISTEMA',erro.message,'ALERTA',String(jogo));}}
+ const mensagem=finalizada?(especial.message||'Placar registrado. Competição encerrada e arquivada.'):'Placar registrado. Próxima partida liberada em '+intervalo+' minutos.';
+ if(rapido)return{message:mensagem,partial:false,corrected:false,indexRefreshRequired:true,refreshRequired:true,savedMatch:{game:jogo,scores:resultado.scores,sets1:resultado.sets1,sets2:resultado.sets2,winnerId:vencedorId,status:'FINALIZADO',startedAt:inicio,finishedAt:agora}};
+ return{message:mensagem,state:obterEstadoAdmin_()};
 }
 function prioridadePartida_(r){const fase=texto_(r[2]).toUpperCase();if(fase==='REPESCAGEM')return numero_(r[1])-100;if(fase==='DISPUTA DE 3º LUGAR')return-2;if(fase==='FINAL')return-1;return numero_(r[1]);}
 function liberarProximaPartida_(dados,ignorarIndice,quando){const s=aba_(VOLEI.SHEETS.CHAVEAMENTO),candidatas=[];for(let i=0;i<dados.length;i++){if(i===ignorarIndice)continue;const r=dados[i],status=texto_(r[16]);if(r[3]&&r[5]&&status==='AGUARDANDO'&&!r[18])candidatas.push({i:i,r:r});}candidatas.sort((a,b)=>prioridadePartida_(a.r)-prioridadePartida_(b.r));if(candidatas.length)s.getRange(candidatas[0].i+2,17,1,3).setValues([['AGUARDANDO','',quando]]);}
