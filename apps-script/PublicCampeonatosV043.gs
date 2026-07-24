@@ -1,4 +1,4 @@
-/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACAR RÁPIDO V047 */
+/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACARES RÁPIDOS V049 */
 function pc43StatusAberto_(status){
   const s=texto_(status).toUpperCase();
   return ['SORTEADO','NAO_INICIADO','EM_CONTAGEM','EM_ANDAMENTO','AGENDADO'].indexOf(s)>=0;
@@ -55,16 +55,22 @@ function pc43Responder_(p){
   try{return responder_({ok:true,dados:pc43Lista_(),versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}
   catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}
 }
-function doGet(e){
-  const p=e&&e.parameter||{},acao=texto_(p.acao);
+function pc43Rota_(p){
+  const acao=texto_(p.acao);
   if(acao==='publicCampeonatos')return pc43Responder_(p);
   if(acao==='tmSalvarPlacarRapido')return tm47Responder_(p);
-  return executarApi_(p);
+  if(acao==='tmPlacarEstadoRapido')return tm47ResponderEstado_(p);
+  if(acao==='tmRecalcularRankingRapido')return tm47ResponderRanking_(p);
+  if(acao==='salvarPlacarRapido')return vo49Responder_(p);
+  if(acao==='atualizarIndicesRapido')return vo49ResponderIndices_(p);
+  return null;
+}
+function doGet(e){
+  const p=e&&e.parameter||{},custom=pc43Rota_(p);
+  return custom||executarApi_(p);
 }
 function doPost(e){
   let b={};try{if(e&&e.postData&&e.postData.contents)b=JSON.parse(e.postData.contents);}catch(ignore){}
-  const p=Object.assign({},e&&e.parameter||{},b||{}),acao=texto_(p.acao);
-  if(acao==='publicCampeonatos')return pc43Responder_(p);
-  if(acao==='tmSalvarPlacarRapido')return tm47Responder_(p);
-  return executarApi_(p);
+  const p=Object.assign({},e&&e.parameter||{},b||{}),custom=pc43Rota_(p);
+  return custom||executarApi_(p);
 }
