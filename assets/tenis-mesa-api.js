@@ -2,10 +2,14 @@
   'use strict';
   const C = window.VOLEI_CONFIG || {};
   const ADMIN_KEY_STORE = 'sorteio_volei_admin_key_v10';
+  const CACHE_ADMIN = 'tenis_mesa_estado_admin_v030';
+  const CACHE_PUBLIC = 'tenis_mesa_estado_publico_v030';
   const ADMIN_ACTIONS = new Set([
     'tmAdmin','tmSalvarJogador','tmExcluirJogador','tmCriarCampeonato',
     'tmIniciarPartida','tmRegistrarResultado','tmAbrirCampeonato'
   ]);
+  const inflight = new Map();
+  let lastError = '';
 
   try {
     const informed = new URLSearchParams(location.search).get('chave');
@@ -44,7 +48,7 @@
     if (forceNew) localStorage.removeItem(ADMIN_KEY_STORE);
     let key = localStorage.getItem(ADMIN_KEY_STORE) || '';
     if (!key) {
-      key = String(prompt('Informe a chave administrativa gravada na aba CONFIG:') || '').trim();
+      key = String(prompt('Informe a chave administrativa:') || '').trim();
       if (!key) throw new Error('Chave administrativa não informada.');
       localStorage.setItem(ADMIN_KEY_STORE, key);
     }
@@ -64,7 +68,7 @@
 
   function processResponse(action, response, retryingKey, retry) {
     if (!response || response.ok !== true) {
-      const message = response?.erro || 'Falha na comunicação com o Apps Script.';
+      const message = response?.erro || 'Falha na comunicação com o serviço de dados.';
       if (ADMIN_ACTIONS.has(action) && !retryingKey && /chave administrativa/i.test(message)) {
         localStorage.removeItem(ADMIN_KEY_STORE);
         return retry(true);
@@ -77,14 +81,14 @@
   function jsonp(action, params = {}, retryingKey = false) {
     return new Promise((resolve, reject) => {
       const endpoint = String(C.API_BASE || '').trim();
-      if (!endpoint) return reject(new Error('A URL do Apps Script não está configurada.'));
+      if (!endpoint) return reject(new Error('O endereço do serviço de dados não está configurado.'));
       let query;
       try { query = buildQuery(action, params, retryingKey); } catch (error) { reject(error); return; }
       const callback = `__tmJsonp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       query.set('callback', callback);
       const script = document.createElement('script');
       let done = false;
-      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao acessar o Apps Script.')), 20000);
+      const timer = setTimeout(() => finish(new Error('Tempo esgotado ao atualizar os dados.')), 25000);
       function cleanup() {
         clearTimeout(timer);
         script.remove();
@@ -102,7 +106,7 @@
           finish(null, value);
         } catch (error) { finish(error); }
       };
-      script.onerror = () => finish(new Error('A implantação do Apps Script recusou o carregamento externo.'));
+      script.onerror = () => finish(new Error('O serviço de dados recusou o carregamento externo.'));
       script.src = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${query}`;
       document.head.appendChild(script);
     });
@@ -110,28 +114,108 @@
 
   async function fetchRequest(action, params = {}, retryingKey = false) {
     const endpoint = String(C.API_BASE || '').trim();
+    if (!endpoint) throw new Error('O endereço do serviço de dados não está configurado.');
     const query = buildQuery(action, params, retryingKey);
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 20000);
+    const timer = setTimeout(() => controller.abort(), 25000);
     try {
       const response = await fetch(`${endpoint}${endpoint.includes('?') ? '&' : '?'}${query}`, {
         method: 'GET', mode: 'cors', credentials: 'omit', cache: 'no-store', signal: controller.signal
       });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw new Error(`Falha HTTP ${response.status}`);
       const payload = JSON.parse((await response.text()).trim());
       return await processResponse(action, payload, retryingKey, force => fetchRequest(action, params, force));
     } catch (error) {
-      if (error?.name === 'AbortError') throw new Error('Tempo esgotado ao acessar o Apps Script.');
+      if (error?.name === 'AbortError') throw new Error('Tempo esgotado ao atualizar os dados.');
       throw error;
     } finally { clearTimeout(timer); }
   }
 
-  async function request(action, params = {}) {
+  async function transport(action, params = {}) {
     try { return await jsonp(action, params); }
     catch (jsonpError) {
       try { return await fetchRequest(action, params); }
       catch (_) { throw jsonpError; }
     }
+  }
+
+  function cacheWrite(key, value) {
+    try { localStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), value })); } catch (_) {}
+  }
+
+  function cacheRead(key) {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+      return parsed?.value && typeof parsed.value === 'object' ? parsed.value : null;
+    } catch (_) { return null; }
+  }
+
+  function normalizeState(value = {}) {
+    const state = value && typeof value === 'object' ? { ...value } : {};
+    state.players = Array.isArray(state.players) ? state.players : [];
+    state.participants = Array.isArray(state.participants) ? state.participants : [];
+    state.matches = Array.isArray(state.matches) ? state.matches : [];
+    state.ranking = Array.isArray(state.ranking) ? state.ranking : [];
+    state.championships = Array.isArray(state.championships) ? state.championships : [];
+    state.freeMatches = Array.isArray(state.freeMatches) ? state.freeMatches : [];
+    return state;
+  }
+
+  function contingencyAdmin(publicState, cachedAdmin, error) {
+    const publicData = normalizeState(publicState || {});
+    const cached = normalizeState(cachedAdmin || {});
+    const merged = {
+      ...cached,
+      ...publicData,
+      players: cached.players.length ? cached.players : (publicData.players.length ? publicData.players : publicData.participants.map(item => ({ ...item, active: 'SIM' }))),
+      participants: publicData.participants.length ? publicData.participants : cached.participants,
+      matches: publicData.matches.length ? publicData.matches : cached.matches,
+      ranking: publicData.ranking.length ? publicData.ranking : cached.ranking,
+      championships: cached.championships.length ? cached.championships : (publicData.championship ? [publicData.championship] : []),
+      freeMatches: cached.freeMatches,
+      globalRankingPoints: publicData.globalRankingPoints || cached.globalRankingPoints || [],
+      globalRankingWinRate: publicData.globalRankingWinRate || cached.globalRankingWinRate || [],
+      _fallback: true,
+      _fallbackMessage: error?.message || 'Dados de contingência carregados.'
+    };
+    return normalizeState(merged);
+  }
+
+  async function requestInternal(action, params = {}) {
+    try {
+      const value = await transport(action, params);
+      lastError = '';
+      if (action === 'tmAdmin') cacheWrite(CACHE_ADMIN, value);
+      if (action === 'tmEstado') cacheWrite(CACHE_PUBLIC, value);
+      return value;
+    } catch (error) {
+      lastError = error?.message || String(error);
+      if (action === 'tmAdmin') {
+        const cachedAdmin = cacheRead(CACHE_ADMIN);
+        let publicState = null;
+        try {
+          publicState = await transport('tmEstado', {});
+          cacheWrite(CACHE_PUBLIC, publicState);
+        } catch (_) {
+          publicState = cacheRead(CACHE_PUBLIC);
+        }
+        if (publicState || cachedAdmin) return contingencyAdmin(publicState, cachedAdmin, error);
+      }
+      if (action === 'tmEstado') {
+        const cached = cacheRead(CACHE_PUBLIC);
+        if (cached) return { ...cached, _fallback: true, _fallbackMessage: lastError };
+      }
+      throw error;
+    }
+  }
+
+  function request(action, params = {}) {
+    const isRead = action === 'tmAdmin' || action === 'tmEstado';
+    const key = isRead ? `${action}|${JSON.stringify(params || {})}` : '';
+    if (isRead && inflight.has(key)) return inflight.get(key);
+    const promise = requestInternal(action, params).finally(() => { if (isRead) inflight.delete(key); });
+    if (isRead) inflight.set(key, promise);
+    return promise;
   }
 
   function toast(text, type = 'ok') {
@@ -144,5 +228,5 @@
     setTimeout(() => item.remove(), 5200);
   }
 
-  window.TenisMesa = Object.freeze({ C, request, esc, num, fmt, dateTime, toast });
+  window.TenisMesa = Object.freeze({ C, request, esc, num, fmt, dateTime, toast, getLastError: () => lastError });
 })();
