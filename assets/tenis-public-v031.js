@@ -17,6 +17,14 @@
     const global = Array.isArray(data?.globalRankingPoints) ? data.globalRankingPoints.filter(item => num(item.games) > 0) : [];
     return global.length ? global : (Array.isArray(data?.ranking) ? data.ranking : []);
   }
+  function totalFinalizados(data, matches = []) {
+    const direct = Number(data?.globalFinishedMatches);
+    if (Number.isFinite(direct) && direct > 0) return Math.round(direct);
+    const global = Array.isArray(data?.globalRankingPoints) ? data.globalRankingPoints : [];
+    const fromRanking = global.reduce((sum,item)=>sum+num(item.games),0) / 2;
+    if (fromRanking > 0) return Math.round(fromRanking);
+    return matches.filter(m=>String(m.status||'').toUpperCase()==='FINALIZADO').length;
+  }
 
   function renderRanking(ranking = []) {
     if (!ui.tmRanking) return;
@@ -47,7 +55,7 @@
     if (ui.tmChampionshipMessage) ui.tmChampionshipMessage.textContent = champ?.message || 'As inscrições estão abertas. O próximo campeonato ainda não foi gerado.';
     if (ui.tmParticipantCount) ui.tmParticipantCount.textContent = state.participants?.length || 0;
     if (ui.tmGameCount) ui.tmGameCount.textContent = matches.length;
-    if (ui.tmFinishedCount) ui.tmFinishedCount.textContent = Number.isFinite(Number(state.globalFinishedMatches)) ? num(state.globalFinishedMatches) : matches.filter(m=>m.status==='FINALIZADO').length;
+    if (ui.tmFinishedCount) ui.tmFinishedCount.textContent = totalFinalizados(state,matches);
     if (ui.tmLeader) ui.tmLeader.textContent = ranking[0]?.name || 'A definir';
     if (ui.tmRules) ui.tmRules.textContent = champ ? `Melhor de ${champ.bestOf} • ${champ.setPoints} pontos por set • diferença mínima de ${champ.minimumLead} • vitória vale ${champ.winPoints} ponto(s)` : 'Formato ainda não definido.';
     renderRanking(ranking); renderMatches(matches); ensureNextPanel(state); installGlobal(state);
