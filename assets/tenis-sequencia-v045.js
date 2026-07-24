@@ -12,6 +12,7 @@
   const win = document.getElementById('tmFreeWinPoints');
   const loss = document.getElementById('tmFreeLossPoints');
   const list = document.getElementById('tmFreeMatches');
+  const create = document.getElementById('tmFreeNewGame');
   let syncing = false;
 
   function applyDefaults() {
@@ -53,9 +54,14 @@
 
   function applyWinner(state) {
     if (!p1 || !p2) return;
-    const open = state?.freeOpenMatch || (state?.freeMatches || []).find(match => String(match?.status || '').toUpperCase() !== 'FINALIZADO');
-    if (open) return;
-    const last = latestFinished(state?.freeMatches || []);
+    const matches = Array.isArray(state?.freeMatches) ? state.freeMatches : [];
+    const open = state?.freeOpenMatch || matches.find(match => String(match?.status || '').toUpperCase() !== 'FINALIZADO');
+    if (open) {
+      if (create) create.disabled = true;
+      return;
+    }
+    const last = latestFinished(matches);
+    if (create) create.disabled = false;
     if (!last) return;
     const winnerId = String(last.winnerId || '');
     const winnerName = winnerId === String(last.player1Id) ? last.player1 : last.player2;
@@ -76,7 +82,9 @@
     syncing = true;
     try {
       applyDefaults();
-      const state = await TM.request('tmAdmin');
+      let state;
+      try { state = await TM.request('tmPlacarEstadoRapido'); }
+      catch (_) { state = await TM.request('tmAdmin'); }
       applyWinner(state || {});
     } catch (_) {
       applyDefaults();
@@ -84,12 +92,15 @@
   }
 
   applyDefaults();
-  setTimeout(sync, 900);
-  if (list) new MutationObserver(() => { clearTimeout(window.__tm45SeqTimer); window.__tm45SeqTimer = setTimeout(sync, 700); }).observe(list, { childList: true, subtree: true });
+  setTimeout(sync, 120);
+  if (list) new MutationObserver(() => {
+    clearTimeout(window.__tm45SeqTimer);
+    window.__tm45SeqTimer = setTimeout(sync, 80);
+  }).observe(list, { childList: true, subtree: true });
   document.addEventListener('click', event => {
     if (event.target.closest('[data-score-save], [data-pa31-save], #tmSaveScore, #tmFreeNewGame')) {
-      setTimeout(sync, 1500);
-      setTimeout(sync, 5000);
+      setTimeout(sync, 100);
+      setTimeout(sync, 700);
     }
   }, true);
 })();
