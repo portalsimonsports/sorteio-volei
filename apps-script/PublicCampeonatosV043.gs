@@ -1,4 +1,4 @@
-/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 */
+/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACAR RÁPIDO V047 */
 function pc43StatusAberto_(status){
   const s=texto_(status).toUpperCase();
   return ['SORTEADO','NAO_INICIADO','EM_CONTAGEM','EM_ANDAMENTO','AGENDADO'].indexOf(s)>=0;
@@ -56,13 +56,15 @@ function pc43Responder_(p){
   catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:VOLEI.VERSION,dataHora:formatarData_(new Date())},p.callback);}
 }
 function doGet(e){
-  const p=e&&e.parameter||{};
-  if(texto_(p.acao)==='publicCampeonatos')return pc43Responder_(p);
+  const p=e&&e.parameter||{},acao=texto_(p.acao);
+  if(acao==='publicCampeonatos')return pc43Responder_(p);
+  if(acao==='tmSalvarPlacarRapido')return tm47Responder_(p);
   return executarApi_(p);
 }
 function doPost(e){
   let b={};try{if(e&&e.postData&&e.postData.contents)b=JSON.parse(e.postData.contents);}catch(ignore){}
-  const p=Object.assign({},e&&e.parameter||{},b||{});
-  if(texto_(p.acao)==='publicCampeonatos')return pc43Responder_(p);
+  const p=Object.assign({},e&&e.parameter||{},b||{}),acao=texto_(p.acao);
+  if(acao==='publicCampeonatos')return pc43Responder_(p);
+  if(acao==='tmSalvarPlacarRapido')return tm47Responder_(p);
   return executarApi_(p);
 }
