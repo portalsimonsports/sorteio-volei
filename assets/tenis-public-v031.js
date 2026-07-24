@@ -8,7 +8,7 @@
   let state = null, retryTimer = null, globalPanel = null, globalRender = null;
   const CACHE_KEY='tenis_mesa_estado_publico_v031';
   function cacheRead(){try{return JSON.parse(localStorage.getItem(CACHE_KEY)||'null')?.value||null;}catch(_){return null;}}
-  function cacheWrite(value){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),value}));}catch(_){}}
+  function cacheWrite(value){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),value}));}catch(_){} }
   function quickState(){return new Promise((resolve,reject)=>{const endpoint=String(window.VOLEI_CONFIG?.API_BASE||'').trim();if(!endpoint)return reject(new Error('Serviço não configurado.'));const callback=`__tmPublicV031_${Date.now()}_${Math.random().toString(36).slice(2)}`,script=document.createElement('script');let done=false;const timer=setTimeout(()=>finish(new Error('Tempo esgotado.')),9000);function finish(error,value){if(done)return;done=true;clearTimeout(timer);script.remove();try{delete window[callback];}catch(_){window[callback]=undefined;}error?reject(error):resolve(value);}window[callback]=response=>{if(response?.ok===true){cacheWrite(response.dados);finish(null,response.dados);}else finish(new Error(response?.erro||'Falha ao atualizar.'));};script.onerror=()=>finish(new Error('Falha de conexão.'));const query=new URLSearchParams({acao:'tmEstado',callback,_:Date.now()});script.src=`${endpoint}${endpoint.includes('?')?'&':'?'}${query}`;document.head.appendChild(script);});}
   const empty = text => `<div class="tm-empty">${esc(text)}</div>`;
   const scoreText = match => Array.isArray(match.scores) && match.scores.length ? `${match.scores.map(set => `${num(set[0])}–${num(set[1])}`).join(' | ')} • Sets ${num(match.sets1)} × ${num(match.sets2)}` : 'Placar ainda não registrado';
@@ -47,7 +47,7 @@
     if (ui.tmChampionshipMessage) ui.tmChampionshipMessage.textContent = champ?.message || 'As inscrições estão abertas. O próximo campeonato ainda não foi gerado.';
     if (ui.tmParticipantCount) ui.tmParticipantCount.textContent = state.participants?.length || 0;
     if (ui.tmGameCount) ui.tmGameCount.textContent = matches.length;
-    if (ui.tmFinishedCount) ui.tmFinishedCount.textContent = matches.filter(m=>m.status==='FINALIZADO').length;
+    if (ui.tmFinishedCount) ui.tmFinishedCount.textContent = Number.isFinite(Number(state.globalFinishedMatches)) ? num(state.globalFinishedMatches) : matches.filter(m=>m.status==='FINALIZADO').length;
     if (ui.tmLeader) ui.tmLeader.textContent = ranking[0]?.name || 'A definir';
     if (ui.tmRules) ui.tmRules.textContent = champ ? `Melhor de ${champ.bestOf} • ${champ.setPoints} pontos por set • diferença mínima de ${champ.minimumLead} • vitória vale ${champ.winPoints} ponto(s)` : 'Formato ainda não definido.';
     renderRanking(ranking); renderMatches(matches); ensureNextPanel(state); installGlobal(state);
