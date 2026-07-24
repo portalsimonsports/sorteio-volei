@@ -61,7 +61,7 @@
     const status = document.getElementById('tmAdminConnection');
     const refresh = document.getElementById('tmRefresh');
     const footerVersion = document.querySelector('.tm-footer span:last-child');
-    if (footerVersion) footerVersion.textContent = 'V030';
+    if (footerVersion) footerVersion.textContent = 'V031';
     let attempts = 0;
 
     async function recover() {
@@ -71,18 +71,27 @@
       attempts++;
       try {
         const state = await window.TenisMesa.request('tmAdmin');
-        if (status) status.textContent = state?._fallback ? 'Dados de contingência carregados' : 'Dados atualizados';
+        if (status) status.textContent = state?._fallback ? 'Últimos dados disponíveis carregados' : 'Dados atualizados';
         if (refresh && attempts === 1) setTimeout(() => refresh.click(), 50);
       } catch (error) {
-        if (status) status.textContent = `Falha temporária: ${sanitizeText(error.message || 'não foi possível atualizar')}`;
+        if (status) status.textContent = `Atualização temporariamente indisponível: ${sanitizeText(error.message || 'nova tentativa automática')}`;
       }
     }
 
     setTimeout(recover, 900);
     const timer = setInterval(() => {
       recover();
-      if (attempts >= 4 || !/não foi possível|falha|carregando/i.test(String(status?.textContent || ''))) clearInterval(timer);
+      if (attempts >= 4 || !/não foi possível|falha|carregando|indisponível/i.test(String(status?.textContent || ''))) clearInterval(timer);
     }, 6000);
+  }
+
+  function loadMatchFilter() {
+    if (!['admin','tenis-mesa-admin'].includes(document.body?.dataset.page || '')) return;
+    if (document.querySelector('script[data-pa31-filter]')) return;
+    const script = document.createElement('script');
+    script.src = 'assets/placar-filtro-v031.js?v=20260724-0735';
+    script.dataset.pa31Filter = '1';
+    document.head.appendChild(script);
   }
 
   const originalConfirm = window.confirm.bind(window);
@@ -102,4 +111,5 @@
     hideAdministrativeLinks();
   }).observe(document.documentElement, { childList: true, subtree: true, characterData: true });
   installTennisRecovery();
+  loadMatchFilter();
 })();
