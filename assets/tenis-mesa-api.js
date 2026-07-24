@@ -6,7 +6,8 @@
   const CACHE_PUBLIC = 'tenis_mesa_estado_publico_v030';
   const ADMIN_ACTIONS = new Set([
     'tmAdmin','tmSalvarJogador','tmExcluirJogador','tmCriarCampeonato',
-    'tmIniciarPartida','tmRegistrarResultado','tmAbrirCampeonato'
+    'tmIniciarPartida','tmRegistrarResultado','tmAbrirCampeonato',
+    'tmPlacarEstadoRapido','tmRecalcularRankingRapido'
   ]);
   const inflight = new Map();
   let lastError = '';
@@ -175,6 +176,7 @@
       freeMatches: cached.freeMatches,
       globalRankingPoints: publicData.globalRankingPoints || cached.globalRankingPoints || [],
       globalRankingWinRate: publicData.globalRankingWinRate || cached.globalRankingWinRate || [],
+      globalFinishedMatches: publicData.globalFinishedMatches ?? cached.globalFinishedMatches ?? 0,
       _fallback: true,
       _fallbackMessage: error?.message || 'Dados de contingência carregados.'
     };
