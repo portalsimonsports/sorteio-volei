@@ -50,14 +50,21 @@
     });
   }
 
+  function refreshAdmin(delay = 80) {
+    V.invalidateReadCache?.();
+    setTimeout(() => document.getElementById('refreshAdmin')?.click(), delay);
+  }
+
   function backgroundAfterSave(result) {
     if (result?.partial) return;
-    const refresh = () => {
-      V.invalidateReadCache?.();
-      setTimeout(() => document.getElementById('refreshAdmin')?.click(), 120);
-    };
-    if (result?.indexRefreshRequired) direct('atualizarIndicesRapido',{},60000).catch(()=>{}).finally(refresh);
-    else refresh();
+    // Atualiza a tela e libera os controles logo após a gravação curta.
+    refreshAdmin(80);
+    // Índices ficam fora do caminho crítico; ao concluir, faz uma segunda atualização.
+    if (result?.indexRefreshRequired) {
+      direct('atualizarIndicesRapido',{},60000)
+        .catch(()=>{})
+        .finally(() => refreshAdmin(80));
+    }
   }
 
   V.request = function(action, params = {}) {
