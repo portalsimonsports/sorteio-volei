@@ -10,14 +10,16 @@
 
   function rules(state) {
     const source = state?.rules || {};
-    const bestOfRaw = Number(source.bestOf ?? V.C.BEST_OF_SETS ?? 3);
+    const championship = state?.championship || {};
+    const settings = championship?.settings || {};
+    const bestOfRaw = Number(championship.bestOf || settings.bestOf || source.bestOf || V.C.BEST_OF_SETS || 3);
     const bestOf = [1, 3, 5].includes(bestOfRaw) ? bestOfRaw : 3;
     return {
       bestOf,
       setsToWin: Number(source.setsToWin || Math.floor(bestOf / 2) + 1),
-      normalSetPoints: Number(source.normalSetPoints || V.C.NORMAL_SET_POINTS || 25),
-      tiebreakSetPoints: Number(source.tiebreakSetPoints || V.C.TIEBREAK_SET_POINTS || 15),
-      minimumLead: Number(source.minimumLead || V.C.MINIMUM_LEAD || 2)
+      normalSetPoints: Number(championship.normalPoints || settings.normalPoints || source.normalSetPoints || V.C.NORMAL_SET_POINTS || 25),
+      tiebreakSetPoints: Number(championship.tiebreakPoints || settings.tiebreakPoints || source.tiebreakSetPoints || V.C.TIEBREAK_SET_POINTS || 15),
+      minimumLead: Number(championship.minimumLead || settings.minimumLead || source.minimumLead || V.C.MINIMUM_LEAD || 2)
     };
   }
 
@@ -47,8 +49,8 @@
     return `Classificação direta: ${V.teamName(direct)} aguarda ${waiting}.`;
   }
 
-  function updateRules(stateRules) {
-    const r = rules({ rules: stateRules });
+  function updateRules(state) {
+    const r = rules(state || {});
     const bestOf = document.getElementById('publicBestOf');
     const setsToWin = document.getElementById('publicSetsToWin');
     const normal = document.getElementById('publicNormalPoints');
@@ -80,7 +82,7 @@
     applying = true;
     try {
       const currentRules = rules(state);
-      updateRules(state.rules || {});
+      updateRules(state);
       bracket.style.setProperty('--score-set-count', String(currentRules.bestOf));
       const matches = (state.rounds || []).flatMap(round => round.matches || []);
       matches.forEach(match => {
