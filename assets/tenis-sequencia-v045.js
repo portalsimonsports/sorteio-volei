@@ -15,14 +15,14 @@
   function applyDefaults() {
     if (bestOf && !bestOf.dataset.tm45Default) { bestOf.value = '1'; bestOf.dataset.tm45Default = '1'; }
     if (points && !points.dataset.tm45Default) { points.value = '1'; points.dataset.tm45Default = '1'; }
-    if (lead && !lead.dataset.tm45Default) { lead.value = '1'; lead.dataset.tm45Default = '1'; }
+    if (lead && !lead.dataset.tm45Default) { lead.value = '2'; lead.dataset.tm45Default = '1'; }
 
     const form = document.getElementById('tmTournamentForm');
     if (form && /NOVO CAMPEONATO/i.test(form.textContent || '') && !form.dataset.tm45Default) {
       const b = form.querySelector('#tmBestOf'), p = form.querySelector('#tmSetPoints'), l = form.querySelector('#tmMinimumLead');
       if (b) b.value = '1';
       if (p) p.value = '1';
-      if (l) l.value = '1';
+      if (l) l.value = '2';
       form.dataset.tm45Default = '1';
     }
   }
