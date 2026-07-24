@@ -9,20 +9,30 @@
   const bestOf = document.getElementById('tmFreeBestOf');
   const points = document.getElementById('tmFreeSetPoints');
   const lead = document.getElementById('tmFreeMinimumLead');
+  const win = document.getElementById('tmFreeWinPoints');
+  const loss = document.getElementById('tmFreeLossPoints');
   const list = document.getElementById('tmFreeMatches');
   let syncing = false;
 
   function applyDefaults() {
     if (bestOf && !bestOf.dataset.tm45Default) { bestOf.value = '1'; bestOf.dataset.tm45Default = '1'; }
-    if (points && !points.dataset.tm45Default) { points.value = '1'; points.dataset.tm45Default = '1'; }
+    if (points && !points.dataset.tm45Default) { points.value = '11'; points.dataset.tm45Default = '1'; }
     if (lead && !lead.dataset.tm45Default) { lead.value = '2'; lead.dataset.tm45Default = '1'; }
+    if (win && !win.dataset.tm45Default) { win.value = '1'; win.dataset.tm45Default = '1'; }
+    if (loss && !loss.dataset.tm45Default) { loss.value = '0'; loss.dataset.tm45Default = '1'; }
 
     const form = document.getElementById('tmTournamentForm');
     if (form && /NOVO CAMPEONATO/i.test(form.textContent || '') && !form.dataset.tm45Default) {
-      const b = form.querySelector('#tmBestOf'), p = form.querySelector('#tmSetPoints'), l = form.querySelector('#tmMinimumLead');
+      const b = form.querySelector('#tmBestOf');
+      const p = form.querySelector('#tmSetPoints');
+      const l = form.querySelector('#tmMinimumLead');
+      const w = form.querySelector('#tmWinPoints');
+      const d = form.querySelector('#tmLossPoints');
       if (b) b.value = '1';
-      if (p) p.value = '1';
+      if (p) p.value = '11';
       if (l) l.value = '2';
+      if (w) w.value = '1';
+      if (d) d.value = '0';
       form.dataset.tm45Default = '1';
     }
   }
