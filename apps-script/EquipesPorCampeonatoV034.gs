@@ -52,12 +52,15 @@ function eq34CampeonatosEquipes_(){
       const chave=texto_(e.id)||eq34ChaveNome_(e.name);historico[id][chave]=e;
     });
   }catch(err){try{log_('EQ34_HISTORICO_FALHA','','SISTEMA','SISTEMA',mensagemErro_(err),'AVISO','EQUIPES');}catch(ignore){}}
-  const atuais=(lerEquipes_()||[]).map(eq34EquipePublica_).filter(Boolean),sorteio=ultimoSorteio_();
+  const atuais=(lerEquipes_()||[]).map(eq34EquipePublica_).filter(Boolean);
   const lista=campeonatos.map(c=>{
     const hist=Object.values(historico[c.id]||{}),ehAtivo=c.id===ativo||texto_(c.active)==='SIM',teams=ehAtivo&&atuais.length?atuais:hist;
-    return{id:c.id,name:c.name,status:ehAtivo&&sorteio&&texto_(sorteio.status)?texto_(sorteio.status):c.status,active:ehAtivo,createdAt:c.createdAt||'',startedAt:c.startedAt||'',finishedAt:c.finishedAt||'',teamCount:teams.length||numero_(c.teamCount),teams:teams};
+    return{id:c.id,name:c.name,status:c.status,active:ehAtivo,createdAt:c.createdAt||'',startedAt:c.startedAt||'',finishedAt:c.finishedAt||'',teamCount:teams.length||numero_(c.teamCount),teams:teams};
   });
-  if(ativo&&!lista.some(c=>c.id===ativo))lista.unshift({id:ativo,name:campeonatoNomeAtivo_(),status:texto_(sorteio&&sorteio.status)||'SORTEADO',active:true,createdAt:'',startedAt:'',finishedAt:'',teamCount:atuais.length,teams:atuais});
+  if(ativo&&!lista.some(c=>c.id===ativo)){
+    const campeonato=localizarCampeonato_(ativo);
+    lista.unshift({id:ativo,name:campeonato&&campeonato.name||campeonatoNomeAtivo_(),status:campeonato&&campeonato.status||'SORTEADO',active:true,createdAt:campeonato&&campeonato.createdAt||'',startedAt:campeonato&&campeonato.startedAt||'',finishedAt:campeonato&&campeonato.finishedAt||'',teamCount:atuais.length,teams:atuais});
+  }
   try{cache.put(EQ34_CACHE,JSON.stringify(lista),20);}catch(ignore){}
   return lista;
 }
