@@ -9,7 +9,8 @@
   const scoreInfo = document.getElementById('scoreGameInfo');
   const saveScore = document.getElementById('saveScore');
   const scoreIds = ['scoreS1A','scoreS1B','scoreS2A','scoreS2B','scoreS3A','scoreS3B'];
-  const scoreInputs = scoreIds.map(id => document.getElementById(id));
+  const scoreInputs = scoreIds.map(id => document.getElementById(id)).filter(Boolean);
+  const hasLegacyScoreFields = scoreInputs.length === scoreIds.length;
   const DRAFT_KEY = 'sorteio_volei_placar_rascunho_v1';
   let dirty = false;
 
@@ -59,7 +60,7 @@
   }
 
   function saveDraft() {
-    if (!scoreGame.value) return;
+    if (!hasLegacyScoreFields || !scoreGame?.value) return;
     const drafts = readDraft();
     drafts[scoreGame.value] = scoreInputs.map(input => input.value);
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
@@ -67,16 +68,18 @@
   }
 
   function clearDraft(game) {
+    if (!hasLegacyScoreFields) { dirty = false; return; }
     const drafts = readDraft();
-    delete drafts[String(game || scoreGame.value)];
+    delete drafts[String(game || scoreGame?.value || '')];
     sessionStorage.setItem(DRAFT_KEY, JSON.stringify(drafts));
     dirty = false;
   }
 
   function fillScore(match, force = false) {
-    if (!force && dirty && match && String(match.game) === String(scoreGame.value)) {
-      scoreInfo.textContent = `${matchName(match)} — ${availability(match)} — placar digitado preservado`;
-      saveScore.disabled = !canSelect(match);
+    if (!hasLegacyScoreFields) return;
+    if (!force && dirty && match && String(match.game) === String(scoreGame?.value || '')) {
+      if (scoreInfo) scoreInfo.textContent = `${matchName(match)} — ${availability(match)} — placar digitado preservado`;
+      if (saveScore) saveScore.disabled = !canSelect(match);
       return;
     }
 
@@ -86,25 +89,27 @@
       match?.scores?.[1]?.[0], match?.scores?.[1]?.[1],
       match?.scores?.[2]?.[0], match?.scores?.[2]?.[1]
     ];
-    scoreInputs.forEach((input, index) => input.value = values?.[index] ?? '');
+    scoreInputs.forEach((input, index) => { input.value = values?.[index] ?? ''; });
     dirty = Boolean(draft && draft.some(value => value !== ''));
-    scoreInfo.textContent = match ? `${matchName(match)} — ${availability(match)}` : 'Nenhuma partida selecionada.';
-    saveScore.disabled = !match || !canSelect(match);
+    if (scoreInfo) scoreInfo.textContent = match ? `${matchName(match)} — ${availability(match)}` : 'Nenhuma partida selecionada.';
+    if (saveScore) saveScore.disabled = !match || !canSelect(match);
   }
 
   function selectedMatch() {
-    return A.getState().rounds.flatMap(round => round.matches)
+    if (!scoreGame) return null;
+    return (A.getState()?.rounds || []).flatMap(round => round.matches || [])
       .find(match => String(match.game) === String(scoreGame.value));
   }
 
   function renderOptions(rounds) {
+    if (!hasLegacyScoreFields || !scoreGame) return;
     const previous = scoreGame.value;
     scoreGame.replaceChildren();
     const first = el('option', '', 'Selecione uma partida');
     first.value = '';
     scoreGame.appendChild(first);
 
-    const candidates = rounds.flatMap(round => round.matches).filter(match => {
+    const candidates = (rounds || []).flatMap(round => round.matches || []).filter(match => {
       V.match(match);
       return match.team1 && match.team2 && !['BYE', 'VAZIO', 'FINALIZADO'].includes(statusOf(match));
     });
@@ -128,7 +133,7 @@
   }
 
   function appendPodium(rounds) {
-    const matches = rounds.flatMap(round => round.matches);
+    const matches = (rounds || []).flatMap(round => round.matches || []);
     const final = matches.find(match => String(match.phase || '').toUpperCase() === 'FINAL');
     const third = matches.find(match => String(match.phase || '').toUpperCase() === 'DISPUTA DE 3º LUGAR');
     const champion = V.winner(final || {});
@@ -137,18 +142,19 @@
     if (champion) {
       const box = el('div', 'champion');
       box.append(el('span', '', 'Equipe campeã'), el('strong', '', V.teamName(champion)));
-      A.ui.matchesAdmin.appendChild(box);
+      A.ui.matchesAdmin?.appendChild(box);
     }
     if (thirdPlace) {
       const box = el('div', 'champion');
       box.append(el('span', '', '3º lugar'), el('strong', '', V.teamName(thirdPlace)));
-      A.ui.matchesAdmin.appendChild(box);
+      A.ui.matchesAdmin?.appendChild(box);
     }
   }
 
   function renderHistory(rounds) {
+    if (!A.ui.matchesAdmin) return;
     A.ui.matchesAdmin.replaceChildren();
-    if (!rounds.length) {
+    if (!rounds?.length) {
       A.ui.matchesAdmin.appendChild(el('div', 'empty', 'O chaveamento será exibido depois do sorteio.'));
       return;
     }
@@ -157,7 +163,7 @@
     rounds.forEach(round => {
       const section = el('section');
       section.appendChild(el('h3', '', round.name));
-      round.matches.forEach(match => {
+      (round.matches || []).forEach(match => {
         V.match(match);
         const card = el('article', 'score-editor card');
         const title = el('strong', '', `Jogo ${match.game} — ${match.phase || round.name}`);
@@ -172,8 +178,10 @@
   }
 
   A.renderMatches = rounds => {
-    renderOptions(rounds);
-    renderHistory(rounds);
+    // O placar automático V031 é responsável pelo seletor e pelos campos atuais.
+    // O código legado só manipula o seletor quando todos os antigos scoreS*A/B ainda existirem.
+    if (hasLegacyScoreFields) renderOptions(rounds || []);
+    renderHistory(rounds || []);
   };
   A.selectedMatch = selectedMatch;
   A.fillScore = fillScore;
@@ -181,9 +189,11 @@
   A.scoreIsDirty = () => dirty || scoreInputs.some(input => document.activeElement === input);
   A.canSelectMatch = canSelect;
 
-  scoreGame.addEventListener('change', () => {
-    dirty = false;
-    fillScore(selectedMatch(), true);
-  });
-  scoreInputs.forEach(input => input.addEventListener('input', saveDraft));
+  if (hasLegacyScoreFields && scoreGame) {
+    scoreGame.addEventListener('change', () => {
+      dirty = false;
+      fillScore(selectedMatch(), true);
+    });
+    scoreInputs.forEach(input => input.addEventListener('input', saveDraft));
+  }
 })();
