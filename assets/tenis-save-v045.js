@@ -52,17 +52,12 @@
     } catch (_) { return result; }
   }
 
-  function clickRefresh(delay = 80) {
-    setTimeout(() => document.getElementById('tmRefresh')?.click(), delay);
-  }
-
+  function clickRefresh(delay = 80) { setTimeout(() => document.getElementById('tmRefresh')?.click(), delay); }
   function scheduleFullRefresh(result) {
     if (result?.partial) return;
     clickRefresh(80);
     if (result?.rankingRefreshRequired && result?.championshipId) {
-      base.request('tmRecalcularRankingRapido', { campeonatoId: result.championshipId })
-        .catch(() => {})
-        .finally(() => clickRefresh(80));
+      base.request('tmRecalcularRankingRapido', { campeonatoId: result.championshipId }).catch(() => {}).finally(() => clickRefresh(80));
     }
   }
 
@@ -71,11 +66,16 @@
       const endpoint = String(cfg.API_BASE || '').trim();
       if (!endpoint) { reject(new Error('O endereço do serviço de dados não está configurado.')); return; }
       const enriched = { ...(params || {}) };
-      if (action === 'tmSalvarPlacarAutomatico' && String(enriched.tipo || '').toUpperCase() === 'AVULSO') {
-        const rule = window.__TM52_SCORE_RULES?.[String(enriched.id || '')];
-        if (rule) {
-          enriched.pontosSet = Number(rule.points) || 11;
-          enriched.vantagemMinima = Number(rule.lead) || 2;
+      if (action === 'tmSalvarPlacarAutomatico') {
+        const manual = !window.__TM53_SUPPRESS_MANUAL_SAVE && Number(window.__TM53_MANUAL_SAVE_UNTIL || 0) >= Date.now();
+        enriched.finalizarManual = manual ? 'SIM' : 'NAO';
+        if (manual) window.__TM53_MANUAL_SAVE_UNTIL = 0;
+        if (String(enriched.tipo || '').toUpperCase() === 'AVULSO') {
+          const rule = window.__TM52_SCORE_RULES?.[String(enriched.id || '')];
+          if (rule) {
+            enriched.pontosSet = Number(rule.points) || 11;
+            enriched.vantagemMinima = Number(rule.lead) || 2;
+          }
         }
       }
       const clean = {};
@@ -85,7 +85,7 @@
       });
       let key;
       try { key = adminKey(retryingKey); } catch (error) { reject(error); return; }
-      const callback = `__tmSave52_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const callback = `__tmSave53_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       const remoteAction = action === 'tmSalvarPlacarAutomatico' ? 'tmSalvarPlacarRapido' : action;
       const query = new URLSearchParams({ ...clean, acao: remoteAction, chave: key, callback, _: Date.now() });
       const script = document.createElement('script');
@@ -96,14 +96,11 @@
       window[callback] = payload => {
         if (payload?.ok === true) {
           const result = patchCachedState(payload.dados);
-          finish(null, result);
-          scheduleFullRefresh(result);
-          return;
+          finish(null, result); scheduleFullRefresh(result); return;
         }
         const message = payload?.erro || 'Falha ao salvar o placar.';
         if (!retryingKey && /chave administrativa/i.test(message)) {
-          done = true; cleanup(); localStorage.removeItem(ADMIN_KEY_STORE);
-          saveOnce(action, params, true).then(resolve, reject); return;
+          done = true; cleanup(); localStorage.removeItem(ADMIN_KEY_STORE); saveOnce(action, params, true).then(resolve, reject); return;
         }
         finish(new Error(message));
       };
@@ -113,12 +110,6 @@
     });
   }
 
-  const wrapped = Object.freeze({
-    ...base,
-    request(action, params = {}) {
-      if (SAVE_ACTIONS.has(action)) return saveOnce(action, params);
-      return base.request(action, params);
-    }
-  });
+  const wrapped = Object.freeze({ ...base, request(action, params = {}) { if (SAVE_ACTIONS.has(action)) return saveOnce(action, params); return base.request(action, params); } });
   window.TenisMesa = wrapped;
 })();
