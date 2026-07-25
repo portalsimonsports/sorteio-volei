@@ -1,4 +1,4 @@
-/** TÊNIS DE MESA — PLACAR DIRETO + RECORTES DE RANKING + CONFRONTO DIRETO — V052 */
+/** TÊNIS DE MESA — PLACAR DIRETO + RECORTES DE RANKING + CONFRONTO DIRETO — V053 */
 function tm51ExigirAdminRapido_(chave){
   const props=PropertiesService.getScriptProperties(),esperada=texto_(props.getProperty('ADMIN_KEY'));
   if(!esperada){exigirAdmin_(chave);return;}
@@ -24,7 +24,7 @@ function tm51AtualizarStatus_(ctx,info,status,message,agora){
   ctx.champSheet.getRange(info.rowIndex,1,1,TM_HEADERS.CAMPEONATOS.length).setValues([r]);info.row=r;info.champ=pa31TmChamp_(r);
 }
 function tm52PairKey_(a,b){a=texto_(a);b=texto_(b);if(!a||!b)return'';return a<b?a+'||'+b:b+'||'+a;}
-function tm52HeadToHead_(gameRows,freeRows){
+function tm52HeadToHead_(gameRows,freeRows,manualRows){
   const out={};
   function add(p1,p2,winner,status){
     p1=texto_(p1);p2=texto_(p2);winner=texto_(winner);if(texto_(status)!=='FINALIZADO'||!p1||!p2||!winner)return;
@@ -34,13 +34,14 @@ function tm52HeadToHead_(gameRows,freeRows){
   }
   (gameRows||[]).forEach(r=>add(r[3],r[5],r[10],r[11]));
   (freeRows||[]).forEach(r=>add(r[4],r[6],r[11],r[3]));
+  if(typeof tm53AdicionarHeadToHead_==='function')tm53AdicionarHeadToHead_(out,manualRows||[]);
   return out;
 }
 function tm51SalvarCampeonato_(p){
   const ctx=tm51Contexto_(),info=tm51Campeonato_(ctx,p.campeonatoId);if(!info)throw Error('Nenhum campeonato de tênis de mesa está ativo.');
   const champ=info.champ,jogo=numero_(p.jogo),payload=p.placar||p.scores||p.payload;if(!jogo)throw Error('Selecione uma partida.');
   const rows=tm51Rows_(ctx.gamesSheet,TM_HEADERS.JOGOS.length),i=rows.findIndex(r=>texto_(r[0])===champ.id&&numero_(r[1])===jogo);if(i<0)throw Error('Partida não encontrada.');
-  const r=rows[i].slice(),analysis=pa31AnalisarParcial_(payload,champ.bestOf,champ.setPoints,champ.setPoints,champ.minimumLead,true),wasFinal=texto_(r[11])==='FINALIZADO',agora=new Date();
+  const r=rows[i].slice(),analysis=typeof tm53AnalisarPlacar_==='function'?tm53AnalisarPlacar_(payload,champ.bestOf,champ.setPoints,champ.minimumLead,p.finalizarManual):pa31AnalisarParcial_(payload,champ.bestOf,champ.setPoints,champ.setPoints,champ.minimumLead,true),wasFinal=texto_(r[11])==='FINALIZADO',agora=new Date();
   let nextRow=null,nextIndex=-1;
   if(analysis.matchComplete){
     r[7]=JSON.stringify(analysis.scores.slice(0,champ.bestOf));r[8]=analysis.sets1;r[9]=analysis.sets2;r[10]=analysis.winnerSide===1?texto_(r[3]):texto_(r[5]);r[11]='FINALIZADO';r[12]=r[12]||agora;r[13]=agora;
@@ -56,7 +57,8 @@ function tm51SalvarCampeonato_(p){
   ctx.gamesSheet.getRange(i+2,1,1,TM_HEADERS.JOGOS.length).setValues([r]);
   if(nextRow&&nextIndex>=0)ctx.gamesSheet.getRange(nextIndex+2,1,1,TM_HEADERS.JOGOS.length).setValues([nextRow]);
   try{CacheService.getScriptCache().remove(PA31_CACHE.TM_PUBLIC);}catch(ignore){}
-  return{message:analysis.matchComplete?(wasFinal?'Placar corrigido.':'Partida encerrada automaticamente.'):'Placar parcial salvo automaticamente.',partial:!analysis.matchComplete,corrected:wasFinal&&analysis.matchComplete,analysis:analysis,savedMatch:pa31TmGame_(r),nextMatch:nextRow?pa31TmGame_(nextRow):null,championshipId:champ.id,rankingRefreshRequired:analysis.matchComplete,refreshRequired:true};
+  const manual=!!analysis.manualFinalized;
+  return{message:analysis.matchComplete?(manual?'Confronto encerrado manualmente com vantagem mínima respeitada.':(wasFinal?'Placar corrigido.':'Partida encerrada automaticamente.')):'Placar parcial salvo automaticamente.',partial:!analysis.matchComplete,manualFinalized:manual,corrected:wasFinal&&analysis.matchComplete,analysis:analysis,savedMatch:pa31TmGame_(r),nextMatch:nextRow?pa31TmGame_(nextRow):null,championshipId:champ.id,rankingRefreshRequired:analysis.matchComplete,refreshRequired:true};
 }
 function tm51SalvarAvulso_(p){
   const ctx=tm51Contexto_(),id=texto_(p.id),payload=p.placar||p.scores||p.payload;if(!id)throw Error('Jogo avulso não encontrado.');
@@ -64,15 +66,16 @@ function tm51SalvarAvulso_(p){
   const r=rows[i].slice(),novoAlvo=numero_(p.pontosSet),novaVantagem=numero_(p.vantagemMinima);
   if(novoAlvo>0)r[15]=Math.max(1,novoAlvo);
   if(novaVantagem>0)r[16]=Math.max(1,novaVantagem);
-  const analysis=pa31AnalisarParcial_(payload,r[14],r[15],r[15],r[16],true),wasFinal=texto_(r[3])==='FINALIZADO',agora=new Date();
+  const analysis=typeof tm53AnalisarPlacar_==='function'?tm53AnalisarPlacar_(payload,r[14],r[15],r[16],p.finalizarManual):pa31AnalisarParcial_(payload,r[14],r[15],r[15],r[16],true),wasFinal=texto_(r[3])==='FINALIZADO',agora=new Date();
   if(analysis.matchComplete){r[3]='FINALIZADO';r[8]=JSON.stringify(analysis.scores);r[9]=analysis.sets1;r[10]=analysis.sets2;r[11]=analysis.winnerSide===1?texto_(r[4]):texto_(r[6]);r[12]=r[12]||agora;r[13]=agora;}
   else{if(wasFinal)throw Error('A correção precisa manter um vencedor definido.');r[3]='EM_ANDAMENTO';r[8]=JSON.stringify(analysis.scores);r[9]=analysis.sets1;r[10]=analysis.sets2;r[11]='';r[12]=r[12]||agora;r[13]='';}
   ctx.freeSheet.getRange(i+2,1,1,FLEX_V023.TM_HEADERS.length).setValues([r]);try{CacheService.getScriptCache().remove(PA31_CACHE.TM_PUBLIC);}catch(ignore){}
-  return{message:analysis.matchComplete?(wasFinal?'Placar avulso corrigido.':'Jogo encerrado automaticamente. O vencedor permanece.'):'Placar parcial salvo automaticamente.',partial:!analysis.matchComplete,corrected:wasFinal&&analysis.matchComplete,analysis:analysis,savedMatch:pa31TmFree_(r),rankingRefreshRequired:false,refreshRequired:true};
+  const manual=!!analysis.manualFinalized;
+  return{message:analysis.matchComplete?(manual?'Confronto encerrado manualmente com vantagem mínima respeitada.':(wasFinal?'Placar avulso corrigido.':'Jogo encerrado automaticamente. O vencedor permanece.')):'Placar parcial salvo automaticamente.',partial:!analysis.matchComplete,manualFinalized:manual,corrected:wasFinal&&analysis.matchComplete,analysis:analysis,savedMatch:pa31TmFree_(r),rankingRefreshRequired:false,refreshRequired:true};
 }
 function tm47EstadoPlacar_(){
-  const ctx=tm51Contexto_(),info=tm51Campeonato_(ctx,''),champ=info?info.champ:null,gameRows=tm51Rows_(ctx.gamesSheet,TM_HEADERS.JOGOS.length),freeRows=tm51Rows_(ctx.freeSheet,FLEX_V023.TM_HEADERS.length);
-  return{championship:champ,matches:champ?gameRows.filter(r=>texto_(r[0])===champ.id).map(pa31TmGame_):[],freeMatches:freeRows.filter(r=>r[0]).map(pa31TmFree_),headToHead:tm52HeadToHead_(gameRows,freeRows)};
+  const ctx=tm51Contexto_(),info=tm51Campeonato_(ctx,''),champ=info?info.champ:null,gameRows=tm51Rows_(ctx.gamesSheet,TM_HEADERS.JOGOS.length),freeRows=tm51Rows_(ctx.freeSheet,FLEX_V023.TM_HEADERS.length),manualRows=typeof tm53RowsBook_==='function'?tm53RowsBook_(ctx.book,false):[];
+  return{championship:champ,matches:champ?gameRows.filter(r=>texto_(r[0])===champ.id).map(pa31TmGame_):[],freeMatches:freeRows.filter(r=>r[0]).map(pa31TmFree_),headToHead:tm52HeadToHead_(gameRows,freeRows,manualRows)};
 }
 function tm47RecalcularRanking_(p){
   const champ=texto_(p.campeonatoId)?tmLocalizarCampeonato_(p.campeonatoId):tmCampeonatoAtivo_();
@@ -93,7 +96,7 @@ function tm50RankingEscopos_(){
   return{general:flexOrdenarRanking_(flexTmRankingGlobal_(),'PONTOS'),free:tm50RankingAvulso_(),championships:champs};
 }
 function tm47Salvar_(p){return texto_(p.tipo||'CAMPEONATO').toUpperCase()==='AVULSO'?tm51SalvarAvulso_(p):tm51SalvarCampeonato_(p);}
-function tm47Responder_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47Salvar_(p),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}}
-function tm47ResponderEstado_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47EstadoPlacar_(),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}}
-function tm47ResponderRanking_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47RecalcularRanking_(p),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}}
-function tm50ResponderEscopos_(p){try{return responder_({ok:true,dados:tm50RankingEscopos_(),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V052',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47Responder_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47Salvar_(p),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47ResponderEstado_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47EstadoPlacar_(),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}}
+function tm47ResponderRanking_(p){try{tm51ExigirAdminRapido_(p.chave);return responder_({ok:true,dados:tm47RecalcularRanking_(p),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}}
+function tm50ResponderEscopos_(p){try{return responder_({ok:true,dados:tm50RankingEscopos_(),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}catch(err){return responder_({ok:false,erro:mensagemErro_(err),versao:'V053',dataHora:formatarData_(new Date())},p.callback);}}
