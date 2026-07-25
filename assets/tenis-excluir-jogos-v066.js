@@ -8,6 +8,15 @@
   let processing = false;
   let modalResolve = null;
 
+  function ensureModalStyles() {
+    if (document.getElementById('tm67DeleteModalCss')) return;
+    const link = document.createElement('link');
+    link.id = 'tm67DeleteModalCss';
+    link.rel = 'stylesheet';
+    link.href = 'assets/tenis-excluir-jogos-v067.css?v=20260725-1725';
+    document.head.appendChild(link);
+  }
+
   function adminKey(force = false) {
     if (force) localStorage.removeItem(KEY_STORE);
     let key = String(localStorage.getItem(KEY_STORE) || '').trim();
@@ -184,6 +193,7 @@
   const start = () => {
     const list = document.getElementById(LIST_ID);
     if (!list) return;
+    ensureModalStyles();
     ensureDeleteModal();
     installButtons();
     new MutationObserver(installButtons).observe(list, { childList: true, subtree: true });
