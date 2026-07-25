@@ -1,5 +1,38 @@
-/* TÊNIS DE MESA — SOMENTE EFEITO VISUAL DO RANKING DO VÔLEI
-   A estrutura continua sendo a original .tm-rank-row. */
+/* TÊNIS DE MESA — EFEITO VISUAL DO RANKING DO VÔLEI + ORDENAÇÃO V064
+   A estrutura original .tm-rank-row permanece preservada. */
+
+.tm64-ranking-toolbar{
+  display:grid;
+  gap:10px;
+  margin:0 0 18px;
+}
+.tm64-ranking-buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.tm64-ranking-buttons button{
+  min-height:46px;
+  padding:0 16px;
+  border:1px solid #d5e0e8;
+  border-radius:14px;
+  background:#eaf1f7;
+  color:#162033;
+  font:inherit;
+  font-weight:900;
+  cursor:pointer;
+}
+.tm64-ranking-buttons button.active{
+  border-color:#0f766e;
+  background:linear-gradient(135deg,#18b981,#22d3c5);
+  color:#06231e;
+  box-shadow:0 10px 24px rgba(24,185,129,.18);
+}
+.tm64-ranking-toolbar small{
+  color:#667085;
+  font-weight:750;
+  line-height:1.45;
+}
 
 .tm-ranking .tm-rank-row:not(.header){
   position:relative;
@@ -74,7 +107,9 @@
 .tm-ranking .tm-rank-row:not(.header) .tm-rank-name small{color:#667785}
 .tm-ranking .tm-rank-row:not(.header) .tm-stat{color:#111827}
 
-/* Não altera colunas, conteúdo, ordem ou comportamento do ranking original. */
 @media(max-width:900px){
   .tm-ranking .tm-rank-row:not(.header){border-radius:18px}
+}
+@media(max-width:640px){
+  .tm64-ranking-buttons button{flex:1 1 calc(50% - 8px);padding:0 10px}
 }
