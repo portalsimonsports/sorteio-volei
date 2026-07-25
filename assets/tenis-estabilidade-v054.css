@@ -1,0 +1,16 @@
+/* TÊNIS DE MESA — ESTABILIDADE VISUAL E ALTERNÂNCIA DE ESCOPO — V054 */
+#tmHistChampionshipWrap[hidden]{display:none!important}
+.tm54-hero-switch{display:flex;gap:10px;flex-wrap:wrap;margin:18px 0 0}
+.tm54-hero-switch button{border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#d8e7f3;border-radius:999px;padding:10px 16px;font:inherit;font-weight:900;cursor:pointer}
+.tm54-hero-switch button.active{background:#21c7a8;color:#07111f;border-color:#21c7a8;box-shadow:0 10px 24px rgba(33,199,168,.22)}
+.tm54-hero-caption{margin-top:12px;color:#a9bfd2;font-weight:800;min-height:24px}
+#tmRankingScopesV050{display:flex!important;gap:10px!important;flex-wrap:wrap!important;align-items:center!important;margin:0 0 16px!important}
+#tmRankingScopesV050 select{width:100%;max-width:100%;box-sizing:border-box}
+.tm54-ranking-loading{padding:28px;border:1px dashed #cbd7df;border-radius:18px;text-align:center;color:#708095;font-weight:800}
+@media(max-width:760px){
+  .tm54-hero-switch{display:grid;grid-template-columns:1fr 1fr}
+  .tm54-hero-switch button{width:100%;min-height:48px}
+  #tmRankingScopesV050{display:grid!important;grid-template-columns:1fr 1fr!important}
+  #tmRankingScopesV050 [data-tm-scope="AVULSOS"]{grid-column:1/-1}
+  #tmRankingChampionshipV050{grid-column:1/-1!important}
+}
