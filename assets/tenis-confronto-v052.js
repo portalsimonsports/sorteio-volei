@@ -7,6 +7,7 @@
   let activeFreeId = '';
   let refreshing = false;
   let decorating = false;
+  let lastSuccessStatus = '';
 
   const text = value => String(value ?? '').trim();
   const num = value => Number.isFinite(Number(value)) ? Number(value) : 0;
@@ -51,12 +52,14 @@
       el.className = 'tm52-head-to-head';
       head.appendChild(el);
     }
-    el.textContent = h2hText(match);
+    const value = h2hText(match);
+    if (el.textContent !== value) el.textContent = value;
   }
 
   function applyRuleLabels(root, points, lead) {
+    const value = `${points} pontos • diferença ${lead}`;
     root?.querySelectorAll('.pa31-set:not(.complete) header span').forEach(el => {
-      el.textContent = `${points} pontos • diferença ${lead}`;
+      if (el.textContent !== value) el.textContent = value;
     });
   }
 
@@ -118,17 +121,22 @@
     const button = event.target.closest('[data-tm-free-score]');
     if (!button) return;
     activeFreeId = text(button.dataset.tmFreeScore);
+    lastSuccessStatus = '';
     refreshQuick().then(() => setTimeout(decorate, 20));
   }, true);
 
   document.getElementById('tmMatchSelect')?.addEventListener('change', () => {
+    lastSuccessStatus = '';
     refreshQuick().then(() => setTimeout(decorate, 20));
   });
 
   const observer = new MutationObserver(() => {
     setTimeout(decorate, 0);
     const status = document.querySelector('#pa31TennisModalRoot [data-pa31-status]')?.textContent || '';
-    if (/encerrada|correção salva/i.test(status)) refreshQuick().then(decorate);
+    if (/encerrada|correção salva/i.test(status) && status !== lastSuccessStatus) {
+      lastSuccessStatus = status;
+      refreshQuick().then(decorate);
+    }
   });
   observer.observe(document.body, { childList:true, subtree:true, characterData:true });
 
