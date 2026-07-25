@@ -1,4 +1,4 @@
-/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACARES/RANKINGS/HISTÓRICO V055 */
+/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACARES/RANKINGS/HISTÓRICO/EXCLUSÃO V056 */
 function pc43StatusAberto_(status){
   const s=texto_(status).toUpperCase();
   return ['SORTEADO','NAO_INICIADO','EM_CONTAGEM','EM_ANDAMENTO','AGENDADO'].indexOf(s)>=0;
@@ -66,6 +66,8 @@ function pc43Rota_(p){
   if(acao==='tmHistoricoManualSalvar')return tm53ResponderSalvar_(p);
   if(acao==='tmHistoricoManualEditar')return tm55ResponderEditar_(p);
   if(acao==='tmHistoricoManualExcluir')return tm53ResponderExcluir_(p);
+  if(acao==='excluirCampeonato')return ec56ResponderVolei_(p);
+  if(acao==='tmExcluirCampeonato')return ec56ResponderTenis_(p);
   if(acao==='salvarPlacarRapido')return vo49Responder_(p);
   if(acao==='atualizarIndicesRapido')return vo49ResponderIndices_(p);
   return null;
