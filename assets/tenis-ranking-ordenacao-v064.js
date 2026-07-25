@@ -21,8 +21,8 @@
   let criterion = localStorage.getItem(STORAGE_KEY) || 'PONTOS';
   if (!CRITERIA[criterion]) criterion = 'PONTOS';
   let state = null;
-  let rendering = false;
   let refreshTimer = null;
+  let observer = null;
 
   function sourceRanking() {
     const global = Array.isArray(state?.globalRankingPoints)
@@ -74,18 +74,23 @@
     return toolbar;
   }
 
+  function observeTarget() {
+    if (observer) observer.observe(target, { childList: true });
+  }
+
   function render() {
     if (!state) return;
-    rendering = true;
+    observer?.disconnect();
     ensureToolbar();
     const ranking = sortedRanking();
     target.replaceChildren();
+
     if (!ranking.length) {
       const empty = document.createElement('div');
       empty.className = 'tm-empty';
       empty.textContent = 'Ranking aguardando jogos.';
       target.appendChild(empty);
-      rendering = false;
+      observeTarget();
       return;
     }
 
@@ -105,7 +110,7 @@
         <div class="tm-stat">${num(item.setDiff) > 0 ? '+' : ''}${num(item.setDiff)} sets</div>`;
       target.appendChild(row);
     });
-    rendering = false;
+    observeTarget();
   }
 
   async function refresh() {
@@ -123,11 +128,8 @@
     refreshTimer = setTimeout(refresh, delay);
   }
 
-  const observer = new MutationObserver(() => {
-    if (rendering) return;
-    scheduleRefresh(180);
-  });
-  observer.observe(target, { childList: true });
+  observer = new MutationObserver(() => scheduleRefresh(180));
+  observeTarget();
 
   document.getElementById('tmRefresh')?.addEventListener('click', () => scheduleRefresh(500));
   window.addEventListener('tm54-history-changed', () => scheduleRefresh(300));
