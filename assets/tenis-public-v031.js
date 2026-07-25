@@ -7,7 +7,22 @@
   ['tmConnection','tmChampionshipName','tmChampionshipMessage','tmParticipantCount','tmGameCount','tmFinishedCount','tmLeader','tmRules','tmRanking','tmMatches','tmSignupForm','tmSignupName','tmSignupAge','tmSignupSex','tmSignupButton','tmSignupMessage'].forEach(id => ui[id] = document.getElementById(id));
   let state = null, scopeData = null, scopeMode = 'GERAL', scopeChampionshipId = '', scopePromise = null;
   let retryTimer = null, heroMode = 'CAMPEONATO', heroPauseUntil = 0, networkRendered = false;
-  const CACHE_KEY='tenis_mesa_estado_publico_v054';
+  const CACHE_KEY = 'tenis_mesa_estado_publico_v054';
+  const RANKING_SORT_KEY = 'tenis_mesa_ranking_publico_criterio_v065';
+  const RANKING_DIRECTION_KEY = 'tenis_mesa_ranking_publico_direcao_v065';
+  const RANKING_SORTS = {
+    PARTICIPANTE: { field: 'name', direction: 1 },
+    PONTOS: { field: 'points', direction: -1 },
+    JOGOS: { field: 'games', direction: -1 },
+    VITORIAS: { field: 'wins', direction: -1 },
+    DERROTAS: { field: 'losses', direction: 1 },
+    APROVEITAMENTO: { field: 'winRate', direction: -1 },
+    SALDO_SETS: { field: 'setDiff', direction: -1 }
+  };
+  let rankingCriterion = localStorage.getItem(RANKING_SORT_KEY) || 'PONTOS';
+  if (!RANKING_SORTS[rankingCriterion]) rankingCriterion = 'PONTOS';
+  let rankingDirection = Number(localStorage.getItem(RANKING_DIRECTION_KEY));
+  if (![1, -1].includes(rankingDirection)) rankingDirection = RANKING_SORTS[rankingCriterion].direction;
 
   function cacheRead(){try{const x=JSON.parse(localStorage.getItem(CACHE_KEY)||'null');return x?.value&&Date.now()-Number(x.savedAt||0)<600000?x.value:null;}catch(_){return null;}}
   function cacheWrite(value){try{localStorage.setItem(CACHE_KEY,JSON.stringify({savedAt:Date.now(),value}));}catch(_){} }
@@ -22,6 +37,38 @@
     if(scopeMode==='CAMPEONATO'){const champ=currentChampScope();return champ?champ.ranking:null;}
     if(scopeData&&Array.isArray(scopeData.general))return scopeData.general;
     return rankingPrincipal(state||{});
+  }
+
+  function compareText(a,b){return String(a||'').localeCompare(String(b||''),'pt-BR',{sensitivity:'base'});}
+  function rankingOrdenado(ranking=[]){
+    const config=RANKING_SORTS[rankingCriterion]||RANKING_SORTS.PONTOS;
+    const direction=rankingDirection;
+    return ranking.slice().sort((a,b)=>{
+      let primary=0;
+      if(config.field==='name')primary=compareText(a.name,b.name)*direction;
+      else primary=(num(a[config.field])-num(b[config.field]))*direction;
+      if(primary)return primary;
+      if(num(a.points)!==num(b.points))return num(b.points)-num(a.points);
+      if(num(a.winRate)!==num(b.winRate))return num(b.winRate)-num(a.winRate);
+      if(num(a.setDiff)!==num(b.setDiff))return num(b.setDiff)-num(a.setDiff);
+      if(num(a.wins)!==num(b.wins))return num(b.wins)-num(a.wins);
+      if(num(a.losses)!==num(b.losses))return num(a.losses)-num(b.losses);
+      return compareText(a.name,b.name);
+    }).map((item,index)=>({...item,displayPosition:index+1}));
+  }
+
+  function sortHeader(label,key){
+    const active=rankingCriterion===key;
+    const arrow=active?(rankingDirection===-1?' ↓':' ↑'):'';
+    return `<span class="tm-rank-sort${active?' active':''}" role="button" tabindex="0" data-tm-rank-sort="${key}" aria-label="Ordenar por ${esc(label)}" aria-pressed="${active?'true':'false'}">${esc(label)}${arrow}</span>`;
+  }
+
+  function changeRankingSort(key){
+    if(!RANKING_SORTS[key])return;
+    if(rankingCriterion===key)rankingDirection*=-1;
+    else{rankingCriterion=key;rankingDirection=RANKING_SORTS[key].direction;}
+    try{localStorage.setItem(RANKING_SORT_KEY,rankingCriterion);localStorage.setItem(RANKING_DIRECTION_KEY,String(rankingDirection));}catch(_){}
+    const rank=rankingAtual();if(rank!==null)renderRanking(rank);
   }
 
   function ensureScopeControls(){
@@ -68,9 +115,16 @@
     const scoped=(scopeData?.championships||[]).find(c=>String(c.id)===String(champ?.id||''));
     const matches=Array.isArray(state?.matches)?state.matches:[];
     const ranking=scoped?.ranking||state?.ranking||[];
-    return{name:champ?.name||'Nenhum campeonato ativo',message:champ?.message||'O próximo campeonato ainda não foi gerado.',participants:scoped?.summary?.participants??state?.participants?.length??0,games:scoped?.summary?.games??matches.length,finished:scoped?.summary?.finished??matches.filter(m=>String(m.status).toUpperCase()==='FINALIZADO').length,leader:scoped?.summary?.leader||ranking[0]?.name||'A definir',caption:'Classificação e jogos da edição atualmente selecionada.'};
+    const games=num(scoped?.summary?.games??matches.length);
+    const finished=num(scoped?.summary?.finished??matches.filter(m=>String(m.status).toUpperCase()==='FINALIZADO').length);
+    const pending=Math.max(0,games-finished);
+    return{name:champ?.name||'Nenhum campeonato ativo',message:champ?.message||'O próximo campeonato ainda não foi gerado.',participants:scoped?.summary?.participants??state?.participants?.length??0,games,finished,pending,leader:scoped?.summary?.leader||ranking[0]?.name||'A definir',caption:pending?`Classificação da edição selecionada: ${finished} finalizado(s) e ${pending} pendente(s).`:`Todos os ${finished} jogo(s) desta edição estão finalizados.`};
   }
-  function freeSummary(){const s=scopeData?.freeSummary||state?.rankingSummaries?.free||{};return{name:'Jogos avulsos',message:'Confrontos independentes e histórico consolidado classificado como avulso.',participants:num(s.participants),games:num(s.games),finished:num(s.finished),leader:s.leader||scopeData?.free?.[0]?.name||'A definir',caption:'Resultados reais e históricos avulsos são somados neste painel.'};}
+  function freeSummary(){
+    const s=scopeData?.freeSummary||state?.rankingSummaries?.free||{};
+    const games=num(s.games),finished=num(s.finished),pending=Math.max(0,games-finished);
+    return{name:'Jogos avulsos',message:'Confrontos independentes e histórico consolidado classificado como avulso.',participants:num(s.participants),games,finished,pending,leader:s.leader||scopeData?.free?.[0]?.name||'A definir',caption:pending?`Resultados reais e históricos avulsos: ${finished} finalizado(s) e ${pending} confronto(s) pendente(s).`:`Todos os ${finished} resultados avulsos estão finalizados.`};
+  }
   function renderHero(){
     if(!state)return;ensureHeroSwitch();
     const data=heroMode==='AVULSOS'?freeSummary():championshipSummary();
@@ -87,7 +141,8 @@
   function renderRanking(ranking=[]){
     if(!ui.tmRanking)return;
     if(!ranking.length){ui.tmRanking.innerHTML=empty(scopeMode==='AVULSOS'?'O ranking de jogos avulsos aparecerá após o primeiro confronto finalizado ou histórico atribuído a Jogos avulsos.':'O ranking aparecerá após os primeiros resultados.');ui.tmRanking.scrollLeft=0;return;}
-    ui.tmRanking.innerHTML=`<div class="tm-rank-row header"><span>Pos.</span><span>Participante</span><span>Pts</span><span>J</span><span>V</span><span>D</span><span>Aprov.</span><span>Saldo sets</span></div>${ranking.map(item=>`<article class="tm-rank-row top-${num(item.position)}"><div class="tm-position">${num(item.position)}º</div><div class="tm-rank-name"><strong>${esc(item.name)}</strong><small>${num(item.pointsFor)}–${num(item.pointsAgainst)} pontos disputados</small></div><div class="tm-stat"><span>Pontos</span>${num(item.points)}</div><div class="tm-stat"><span>Jogos</span>${num(item.games)}</div><div class="tm-stat"><span>Vitórias</span>${num(item.wins)}</div><div class="tm-stat"><span>Derrotas</span>${num(item.losses)}</div><div class="tm-stat"><span>Aproveitamento</span>${TM.fmt(item.winRate)}%</div><div class="tm-stat"><span>Saldo de sets</span>${num(item.setDiff)>0?'+':''}${num(item.setDiff)}</div></article>`).join('')}`;
+    const ordered=rankingOrdenado(ranking);
+    ui.tmRanking.innerHTML=`<div class="tm-rank-row header"><span>Pos.</span>${sortHeader('Participante','PARTICIPANTE')}${sortHeader('Pts','PONTOS')}${sortHeader('J','JOGOS')}${sortHeader('V','VITORIAS')}${sortHeader('D','DERROTAS')}${sortHeader('Aprov.','APROVEITAMENTO')}${sortHeader('Saldo sets','SALDO_SETS')}</div>${ordered.map(item=>{const position=num(item.displayPosition);return `<article class="tm-rank-row top-${position}"><div class="tm-position">${position}º</div><div class="tm-rank-name"><strong>${esc(item.name)}</strong><small>${num(item.pointsFor)}–${num(item.pointsAgainst)} pontos disputados</small></div><div class="tm-stat"><span>Pontos</span>${num(item.points)}</div><div class="tm-stat"><span>Jogos</span>${num(item.games)}</div><div class="tm-stat"><span>Vitórias</span>${num(item.wins)}</div><div class="tm-stat"><span>Derrotas</span>${num(item.losses)}</div><div class="tm-stat"><span>Aproveitamento</span>${TM.fmt(item.winRate)}%</div><div class="tm-stat"><span>Saldo de sets</span>${num(item.setDiff)>0?'+':''}${num(item.setDiff)}</div></article>`;}).join('')}`;
     ui.tmRanking.scrollLeft=0;
   }
   function renderMatches(matches=[]){if(!ui.tmMatches)return;ui.tmMatches.innerHTML=matches.length?matches.map(match=>`<article class="tm-match${match.status==='EM_ANDAMENTO'?' live':''}${match.status==='FINALIZADO'?' final':''}"><div class="tm-match-head"><strong>Jogo ${num(match.game)} <small>• Rodada ${num(match.round)}</small></strong><span class="tm-match-status">${esc(match.status)}</span></div><div class="tm-versus"><article class="${match.winnerId===match.player1Id?'winner':''}"><strong>${esc(match.player1)}</strong><small>${match.status==='FINALIZADO'?`${num(match.sets1)} sets`:'Participante 1'}</small></article><span>×</span><article class="${match.winnerId===match.player2Id?'winner':''}"><strong>${esc(match.player2)}</strong><small>${match.status==='FINALIZADO'?`${num(match.sets2)} sets`:'Participante 2'}</small></article></div><div class="tm-score-summary">${esc(scoreText(match))}</div></article>`).join(''):empty('Os jogos ainda não foram gerados.');}
@@ -106,6 +161,9 @@
     catch(error){const cached=cacheRead();if(cached&&!state)render(cached,'Exibindo os últimos dados disponíveis');else if(ui.tmConnection)ui.tmConnection.textContent='Atualização temporariamente indisponível. Nova tentativa automática.';if(!silent&&!state)TM.toast('Não foi possível atualizar agora. O sistema tentará novamente.','warn');retryTimer=setTimeout(()=>refresh(true),12000);}
   }
   ui.tmSignupForm?.addEventListener('submit',async event=>{event.preventDefault();ui.tmSignupButton.disabled=true;ui.tmSignupButton.textContent='Inscrevendo...';try{const result=await TM.request('tmInscrever',{nome:ui.tmSignupName.value,idade:ui.tmSignupAge.value,sexo:ui.tmSignupSex.value});ui.tmSignupMessage.textContent=result.message||'Inscrição confirmada.';ui.tmSignupForm.reset();TM.toast(result.message||'Inscrição confirmada.');refresh(true);}catch(error){ui.tmSignupMessage.textContent=error.message;TM.toast(error.message,'error');}finally{ui.tmSignupButton.disabled=false;ui.tmSignupButton.textContent='Confirmar inscrição';}});
+
+  ui.tmRanking?.addEventListener('click',event=>{const header=event.target.closest('[data-tm-rank-sort]');if(header)changeRankingSort(header.dataset.tmRankSort);});
+  ui.tmRanking?.addEventListener('keydown',event=>{const header=event.target.closest('[data-tm-rank-sort]');if(!header||!['Enter',' '].includes(event.key))return;event.preventDefault();changeRankingSort(header.dataset.tmRankSort);});
 
   const cached=cacheRead();if(cached)setTimeout(()=>{if(!networkRendered&&!state)render(cached,'Exibindo os últimos dados disponíveis');},1400);
   refresh(Boolean(cached));
