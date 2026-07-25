@@ -47,13 +47,31 @@
     if(wrap)wrap.hidden=!championship;
     if(select){select.required=championship;if(!championship)select.value='';}
   }
+  function formatDateTime(value) {
+    if (!value) return 'Data/hora não registrada';
+    if (typeof value === 'string') {
+      const text=value.trim();
+      const br=text.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,]+)(\d{1,2}):(\d{2})(?::\d{2})?/);
+      if(br)return `${br[1].padStart(2,'0')}/${br[2].padStart(2,'0')}/${br[3]} • ${br[4].padStart(2,'0')}:${br[5]}`;
+    }
+    const date=value instanceof Date?value:new Date(value);
+    if(Number.isNaN(date.getTime()))return esc(value);
+    try{
+      const parts=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(date);
+      const get=type=>parts.find(p=>p.type===type)?.value||'';
+      return `${get('day')}/${get('month')}/${get('year')} • ${get('hour')}:${get('minute')}`;
+    }catch(ignore){
+      return date.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}).replace(',',' •');
+    }
+  }
   function renderRecords() {
     const root=document.getElementById('tmManualHistoryList'); if(!root) return;
     const rows=Array.isArray(state.records)?state.records:[];
     root.innerHTML=rows.length?rows.slice().reverse().map(h=>{
       const origem=h.origin==='CAMPEONATO'?`Campeonato: ${esc(h.championshipName||h.championshipId||'não informado')}`:'Jogos avulsos';
       const editing=String(editingId)===String(h.id)?' editing':'';
-      return `<article class="tm53-history-item${editing}"><div class="tm53-history-copy"><strong>${esc(h.playerA)} ${Number(h.winsA)||0} × ${Number(h.winsB)||0} ${esc(h.playerB)}</strong><small>${Number(h.games)||0} confrontos • base ${Number(h.basePoints)||11} pontos • diferença 2 • ${origem}</small></div><div class="tm53-history-actions"><button type="button" class="tm-button primary" data-tm53-edit="${esc(h.id)}">Editar lançamento</button><button type="button" class="tm-button secondary" data-tm53-delete="${esc(h.id)}">Excluir lançamento</button></div></article>`;
+      const dataHora=formatDateTime(h.createdAt);
+      return `<article class="tm53-history-item${editing}"><div class="tm53-history-copy"><strong>${esc(h.playerA)} ${Number(h.winsA)||0} × ${Number(h.winsB)||0} ${esc(h.playerB)}</strong><small>${Number(h.games)||0} confrontos • base ${Number(h.basePoints)||11} pontos • diferença 2 • ${origem}</small><small class="tm53-history-datetime">📅 ${esc(dataHora)}</small></div><div class="tm53-history-actions"><button type="button" class="tm-button primary" data-tm53-edit="${esc(h.id)}">Editar lançamento</button><button type="button" class="tm-button secondary" data-tm53-delete="${esc(h.id)}">Excluir lançamento</button></div></article>`;
     }).join(''):'<div class="tm-empty">Nenhum histórico consolidado lançado manualmente.</div>';
   }
   async function refresh() {
