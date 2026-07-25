@@ -44,6 +44,15 @@
       .sort((a, b) => Number(b.order || b.game || 0) - Number(a.order || a.game || 0))[0] || null;
   }
 
+  function latestOpen(matches = []) {
+    return [...matches]
+      .filter(match => {
+        const status = String(match?.status || '').toUpperCase();
+        return match?.id && status && status !== 'FINALIZADO';
+      })
+      .sort((a, b) => Number(b.order || b.game || 0) - Number(a.order || a.game || 0))[0] || null;
+  }
+
   function setSelectValue(select, value) {
     if (!select || !value) return false;
     const exists = [...select.options].some(option => String(option.value) === String(value));
@@ -52,28 +61,58 @@
     return true;
   }
 
+  function liberarSeletores() {
+    if (p1) p1.disabled = false;
+    if (p2) p2.disabled = false;
+    if (create) create.disabled = false;
+    if (label1) label1.textContent = 'Participante 1';
+    if (note) note.hidden = true;
+  }
+
   function applyWinner(state) {
     if (!p1 || !p2) return;
     const matches = Array.isArray(state?.freeMatches) ? state.freeMatches : [];
-    const open = state?.freeOpenMatch || matches.find(match => String(match?.status || '').toUpperCase() !== 'FINALIZADO');
+
+    // Sempre parte de um estado utilizável. Não confiamos em freeOpenMatch isolado,
+    // pois ele pode permanecer em cache depois que o confronto já foi finalizado.
+    liberarSeletores();
+
+    const open = latestOpen(matches);
     if (open) {
-      if (create) create.disabled = true;
-      return;
+      const ok1 = setSelectValue(p1, open.player1Id);
+      const ok2 = setSelectValue(p2, open.player2Id);
+      if (ok1 && ok2) {
+        p1.disabled = true;
+        p2.disabled = true;
+        if (create) create.disabled = true;
+        if (note) {
+          note.hidden = false;
+          note.textContent = 'Finalize o confronto atual antes de criar um novo jogo.';
+        }
+        return;
+      }
+      // Se o estado aberto não puder ser associado aos participantes carregados,
+      // não bloqueia os selects. Isso evita tela presa por cache/estado antigo.
     }
+
     const last = latestFinished(matches);
-    if (create) create.disabled = false;
     if (!last) return;
+
     const winnerId = String(last.winnerId || '');
     const winnerName = winnerId === String(last.player1Id) ? last.player1 : last.player2;
     const loserId = winnerId === String(last.player1Id) ? String(last.player2Id || '') : String(last.player1Id || '');
+
     if (!setSelectValue(p1, winnerId)) return;
+
+    // Regra preservada: após um resultado, apenas o vencedor fica fixo.
+    // O desafiante continua sempre selecionável.
     p1.disabled = true;
+    p2.disabled = false;
     if (label1) label1.textContent = 'Vencedor do último jogo';
     if (!p2.value || p2.value === winnerId) setSelectValue(p2, loserId);
-    p2.disabled = false;
     if (note) {
       note.hidden = false;
-      note.textContent = `${winnerName || 'O vencedor do último jogo'} permanece fixo para o próximo confronto.`;
+      note.textContent = `${winnerName || 'O vencedor do último jogo'} permanece fixo para o próximo confronto. Escolha o desafiante.`;
     }
   }
 
@@ -88,19 +127,27 @@
       applyWinner(state || {});
     } catch (_) {
       applyDefaults();
+      liberarSeletores();
     } finally { syncing = false; }
   }
 
   applyDefaults();
-  setTimeout(sync, 120);
+  // Libera imediatamente para não deixar a interface presa enquanto o estado chega.
+  liberarSeletores();
+  setTimeout(sync, 80);
+  setTimeout(sync, 500);
+
   if (list) new MutationObserver(() => {
     clearTimeout(window.__tm45SeqTimer);
-    window.__tm45SeqTimer = setTimeout(sync, 80);
+    window.__tm45SeqTimer = setTimeout(sync, 60);
   }).observe(list, { childList: true, subtree: true });
+
   document.addEventListener('click', event => {
-    if (event.target.closest('[data-score-save], [data-pa31-save], #tmSaveScore, #tmFreeNewGame')) {
-      setTimeout(sync, 100);
-      setTimeout(sync, 700);
+    if (event.target.closest('[data-score-save], [data-pa31-save], #tmSaveScore, #tmFreeNewGame, [data-tm57-mode]')) {
+      setTimeout(sync, 80);
+      setTimeout(sync, 500);
     }
   }, true);
+
+  document.addEventListener('tm:free-selectors-refresh', () => sync());
 })();
