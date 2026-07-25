@@ -70,14 +70,22 @@
     return new Promise((resolve, reject) => {
       const endpoint = String(cfg.API_BASE || '').trim();
       if (!endpoint) { reject(new Error('O endereço do serviço de dados não está configurado.')); return; }
+      const enriched = { ...(params || {}) };
+      if (action === 'tmSalvarPlacarAutomatico' && String(enriched.tipo || '').toUpperCase() === 'AVULSO') {
+        const rule = window.__TM52_SCORE_RULES?.[String(enriched.id || '')];
+        if (rule) {
+          enriched.pontosSet = Number(rule.points) || 11;
+          enriched.vantagemMinima = Number(rule.lead) || 2;
+        }
+      }
       const clean = {};
-      Object.entries(params || {}).forEach(([key, value]) => {
+      Object.entries(enriched).forEach(([key, value]) => {
         if (value === undefined || value === null || key === 'chave') return;
         clean[key] = typeof value === 'object' ? JSON.stringify(value) : String(value);
       });
       let key;
       try { key = adminKey(retryingKey); } catch (error) { reject(error); return; }
-      const callback = `__tmSave51_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      const callback = `__tmSave52_${Date.now()}_${Math.random().toString(36).slice(2)}`;
       const remoteAction = action === 'tmSalvarPlacarAutomatico' ? 'tmSalvarPlacarRapido' : action;
       const query = new URLSearchParams({ ...clean, acao: remoteAction, chave: key, callback, _: Date.now() });
       const script = document.createElement('script');
