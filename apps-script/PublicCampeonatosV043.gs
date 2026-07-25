@@ -1,4 +1,4 @@
-/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACARES/RANKINGS V050 */
+/** ENDPOINT PÚBLICO DIRETO — CAMPEONATOS E EQUIPES — V043 + PLACARES/RANKINGS/HISTÓRICO V053 */
 function pc43StatusAberto_(status){
   const s=texto_(status).toUpperCase();
   return ['SORTEADO','NAO_INICIADO','EM_CONTAGEM','EM_ANDAMENTO','AGENDADO'].indexOf(s)>=0;
@@ -62,6 +62,9 @@ function pc43Rota_(p){
   if(acao==='tmPlacarEstadoRapido')return tm47ResponderEstado_(p);
   if(acao==='tmRecalcularRankingRapido')return tm47ResponderRanking_(p);
   if(acao==='tmRankingEscopos')return tm50ResponderEscopos_(p);
+  if(acao==='tmHistoricoManualEstado')return tm53ResponderEstado_(p);
+  if(acao==='tmHistoricoManualSalvar')return tm53ResponderSalvar_(p);
+  if(acao==='tmHistoricoManualExcluir')return tm53ResponderExcluir_(p);
   if(acao==='salvarPlacarRapido')return vo49Responder_(p);
   if(acao==='atualizarIndicesRapido')return vo49ResponderIndices_(p);
   return null;
