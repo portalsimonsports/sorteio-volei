@@ -46,7 +46,7 @@
     if(championships.length){select.innerHTML=championships.map(champ=>`<option value="${esc(champ.id)}">${esc(champ.name)} — ${esc(String(champ.status||'').replaceAll('_',' '))}</option>`).join('');const chosen=[...select.options].some(o=>o.value===String(old))?old:([...select.options].some(o=>o.value===String(current))?String(current):select.options[0]?.value||'');select.value=chosen;scopeChampionshipId=chosen;}
     select.style.display=scopeMode==='CAMPEONATO'?'':'none';
   }
-  async function loadScopes(force=false){
+  async function loadScopes(){
     if(scopePromise)return scopePromise;
     scopePromise=TM.request('tmRankingEscopos').then(data=>{if(data&&typeof data==='object')scopeData=data;ensureScopeControls();updateScopeControls();const rank=rankingAtual();if(rank!==null)renderRanking(rank);renderHero();return data;}).catch(()=>null).finally(()=>{scopePromise=null;});
     return scopePromise;
@@ -94,6 +94,7 @@
   function ensureNextPanel(data){let panel=document.getElementById('pa31NextTennis');const champ=data.championship,upcoming=champ&&['NAO_INICIADO','SORTEADO'].includes(String(champ.status||'').toUpperCase())&&(data.matches||[]).length;if(!upcoming){panel?.remove();return;}if(!panel){panel=document.createElement('section');panel.id='pa31NextTennis';panel.className='tm-panel tm-span-12 pa31-next-panel';document.querySelector('.tm-grid')?.insertBefore(panel,document.getElementById('ranking'));}panel.innerHTML=`<div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e7faf4;color:#087556">PRÓXIMO CAMPEONATO</span><h2>${esc(champ.name||'Campeonato preparado')}</h2><p>Participantes e confrontos já definidos, aguardando o início.</p></div><span class="tm-chip">${(data.matches||[]).length} jogos</span></div><div class="pa31-next-grid">${(data.participants||[]).map(p=>`<article class="pa31-next-card"><strong>${esc(p.name)}</strong><small>Participante ${num(p.order)}</small></article>`).join('')}</div><div class="pa31-next-games">${(data.matches||[]).map(m=>`<div class="pa31-next-game">Jogo ${num(m.game)} — ${esc(m.player1)} × ${esc(m.player2)} <span class="pa31-next-status">${esc(m.status)}</span></div>`).join('')}</div>`;}
   function render(data,note=''){
     state=data||{};networkRendered=true;
+    if(state.rankingScopes&&typeof state.rankingScopes==='object')scopeData=state.rankingScopes;
     if(ui.tmConnection)ui.tmConnection.textContent=note||(state._fallback?'Exibindo os últimos dados disponíveis':'Dados atualizados');
     const champ=state.championship;
     if(ui.tmRules)ui.tmRules.textContent=champ?`${champ.bestOf===1?'1 set':`Melhor de ${champ.bestOf}`} • ${champ.setPoints} pontos por set • diferença mínima de ${champ.minimumLead} • vitória vale ${champ.winPoints} ponto(s)`:'Formato ainda não definido.';
@@ -101,7 +102,7 @@
   }
   async function refresh(silent=false){
     clearTimeout(retryTimer);
-    try{const data=await quickState();render(data);await loadScopes(true);}
+    try{const data=await quickState();render(data);if(!data?.rankingScopes)await loadScopes();}
     catch(error){const cached=cacheRead();if(cached&&!state)render(cached,'Exibindo os últimos dados disponíveis');else if(ui.tmConnection)ui.tmConnection.textContent='Atualização temporariamente indisponível. Nova tentativa automática.';if(!silent&&!state)TM.toast('Não foi possível atualizar agora. O sistema tentará novamente.','warn');retryTimer=setTimeout(()=>refresh(true),12000);}
   }
   ui.tmSignupForm?.addEventListener('submit',async event=>{event.preventDefault();ui.tmSignupButton.disabled=true;ui.tmSignupButton.textContent='Inscrevendo...';try{const result=await TM.request('tmInscrever',{nome:ui.tmSignupName.value,idade:ui.tmSignupAge.value,sexo:ui.tmSignupSex.value});ui.tmSignupMessage.textContent=result.message||'Inscrição confirmada.';ui.tmSignupForm.reset();TM.toast(result.message||'Inscrição confirmada.');refresh(true);}catch(error){ui.tmSignupMessage.textContent=error.message;TM.toast(error.message,'error');}finally{ui.tmSignupButton.disabled=false;ui.tmSignupButton.textContent='Confirmar inscrição';}});
