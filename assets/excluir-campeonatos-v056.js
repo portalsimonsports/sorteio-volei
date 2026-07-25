@@ -2,7 +2,8 @@
   'use strict';
   const page=document.body?.dataset.page||'';
   if(!['admin','tenis-mesa-admin'].includes(page))return;
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const KEY_STORE='sorteio_volei_admin_key_v10';
+  function adminKey(force=false){if(force)localStorage.removeItem(KEY_STORE);let key=String(localStorage.getItem(KEY_STORE)||'').trim();if(!key){key=String(prompt('Informe a chave administrativa:')||'').trim();if(!key)throw new Error('Chave administrativa não informada.');localStorage.setItem(KEY_STORE,key);}return key;}
 
   function injectVolei(){
     document.querySelectorAll('[data-v035-card]').forEach(card=>{
@@ -24,6 +25,20 @@
     });
   }
   function inject(){page==='admin'?injectVolei():injectTenis();}
+  async function removeRemote(sport,id,retry=false){
+    const params={id,chave:adminKey(retry)};
+    try{
+      if(sport==='volei'){
+        if(!window.Volei?.championshipRequest)throw new Error('API administrativa do vôlei indisponível.');
+        return await window.Volei.championshipRequest('excluirCampeonato',params);
+      }
+      if(!window.TenisMesa?.request)throw new Error('API administrativa do tênis indisponível.');
+      return await window.TenisMesa.request('tmExcluirCampeonato',params);
+    }catch(error){
+      if(!retry&&/chave administrativa/i.test(String(error?.message||'')))return removeRemote(sport,id,true);
+      throw error;
+    }
+  }
 
   document.addEventListener('click',async event=>{
     const button=event.target.closest('[data-ec56-delete]');if(!button)return;
@@ -34,20 +49,11 @@
     if(!confirm(aviso))return;
     button.disabled=true;const original=button.textContent;button.textContent='Excluindo...';
     try{
-      let result;
-      if(sport==='volei'){
-        if(!window.Volei?.championshipRequest)throw new Error('API administrativa do vôlei indisponível.');
-        result=await window.Volei.championshipRequest('excluirCampeonato',{id});
-        window.Volei.toast?.(result?.message||'Campeonato excluído.');
-      }else{
-        if(!window.TenisMesa?.request)throw new Error('API administrativa do tênis indisponível.');
-        result=await window.TenisMesa.request('tmExcluirCampeonato',{id});
-        window.TenisMesa.toast?.(result?.message||'Campeonato excluído.');
-      }
+      const result=await removeRemote(sport,id,false);
+      if(sport==='volei')window.Volei?.toast?.(result?.message||'Campeonato excluído.');else window.TenisMesa?.toast?.(result?.message||'Campeonato excluído.');
       setTimeout(()=>location.reload(),650);
     }catch(error){
-      if(sport==='volei')window.Volei?.toast?.(error.message||'Não foi possível excluir o campeonato.','error');
-      else window.TenisMesa?.toast?.(error.message||'Não foi possível excluir o campeonato.','error');
+      if(sport==='volei')window.Volei?.toast?.(error.message||'Não foi possível excluir o campeonato.','error');else window.TenisMesa?.toast?.(error.message||'Não foi possível excluir o campeonato.','error');
       button.disabled=false;button.textContent=original;
     }
   },true);
