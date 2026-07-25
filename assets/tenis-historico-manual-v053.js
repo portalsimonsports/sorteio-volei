@@ -47,10 +47,35 @@
   document.getElementById('tmHistWinsB')?.addEventListener('input',syncTotal);
   document.getElementById('tmManualHistoryForm')?.addEventListener('submit',async event=>{
     event.preventDefault();
-    const button=event.submitter||event.currentTarget.querySelector('button[type="submit"]');if(button)button.disabled=true;
+    const form=event.currentTarget;
+    const button=event.submitter||form?.querySelector('button[type="submit"]');
+    const playerA=document.getElementById('tmHistPlayerA');
+    const playerB=document.getElementById('tmHistPlayerB');
+    const games=document.getElementById('tmHistGames');
+    const winsA=document.getElementById('tmHistWinsA');
+    const winsB=document.getElementById('tmHistWinsB');
+    const basePoints=document.getElementById('tmHistBasePoints');
+    const observation=document.getElementById('tmHistObservation');
+    const payload={
+      jogadorA:playerA?.value||'',
+      jogadorB:playerB?.value||'',
+      confrontos:games?.value||'0',
+      vitoriasA:winsA?.value||'0',
+      vitoriasB:winsB?.value||'0',
+      pontosBase:basePoints?.value||'11',
+      observacao:observation?.value||''
+    };
+    if(button)button.disabled=true;
     try{
-      const result=await request('tmHistoricoManualSalvar',{jogadorA:document.getElementById('tmHistPlayerA').value,jogadorB:document.getElementById('tmHistPlayerB').value,confrontos:document.getElementById('tmHistGames').value,vitoriasA:document.getElementById('tmHistWinsA').value,vitoriasB:document.getElementById('tmHistWinsB').value,pontosBase:document.getElementById('tmHistBasePoints').value,observacao:document.getElementById('tmHistObservation').value});
-      state=result.state||state;renderPlayers();renderRecords();event.currentTarget.reset();document.getElementById('tmHistBasePoints').value='11';document.getElementById('tmHistGames').value='0';TM.toast?.(result.message||'Histórico adicionado.');setTimeout(()=>document.getElementById('tmRefresh')?.click(),80);
+      const result=await request('tmHistoricoManualSalvar',payload);
+      state=result.state||state;
+      renderPlayers();
+      renderRecords();
+      if(form && typeof form.reset==='function') form.reset();
+      if(basePoints) basePoints.value='11';
+      if(games) games.value='0';
+      TM.toast?.(result.message||'Histórico adicionado.');
+      setTimeout(()=>document.getElementById('tmRefresh')?.click(),80);
     }catch(error){TM.toast?.(error.message||'Não foi possível salvar o histórico.','error');}
     finally{if(button)button.disabled=false;}
   });
