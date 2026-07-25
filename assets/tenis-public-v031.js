@@ -47,7 +47,7 @@
     select.style.display=scopeMode==='CAMPEONATO'?'':'none';
   }
   async function loadScopes(force=false){
-    if(scopePromise&&!force)return scopePromise;
+    if(scopePromise)return scopePromise;
     scopePromise=TM.request('tmRankingEscopos').then(data=>{if(data&&typeof data==='object')scopeData=data;ensureScopeControls();updateScopeControls();const rank=rankingAtual();if(rank!==null)renderRanking(rank);renderHero();return data;}).catch(()=>null).finally(()=>{scopePromise=null;});
     return scopePromise;
   }
@@ -86,8 +86,9 @@
 
   function renderRanking(ranking=[]){
     if(!ui.tmRanking)return;
-    if(!ranking.length){ui.tmRanking.innerHTML=empty(scopeMode==='AVULSOS'?'O ranking de jogos avulsos aparecerá após o primeiro confronto finalizado ou histórico atribuído a Jogos avulsos.':'O ranking aparecerá após os primeiros resultados.');return;}
+    if(!ranking.length){ui.tmRanking.innerHTML=empty(scopeMode==='AVULSOS'?'O ranking de jogos avulsos aparecerá após o primeiro confronto finalizado ou histórico atribuído a Jogos avulsos.':'O ranking aparecerá após os primeiros resultados.');ui.tmRanking.scrollLeft=0;return;}
     ui.tmRanking.innerHTML=`<div class="tm-rank-row header"><span>Pos.</span><span>Participante</span><span>Pts</span><span>J</span><span>V</span><span>D</span><span>Aprov.</span><span>Saldo sets</span></div>${ranking.map(item=>`<article class="tm-rank-row top-${num(item.position)}"><div class="tm-position">${num(item.position)}º</div><div class="tm-rank-name"><strong>${esc(item.name)}</strong><small>${num(item.pointsFor)}–${num(item.pointsAgainst)} pontos disputados</small></div><div class="tm-stat"><span>Pontos</span>${num(item.points)}</div><div class="tm-stat"><span>Jogos</span>${num(item.games)}</div><div class="tm-stat"><span>Vitórias</span>${num(item.wins)}</div><div class="tm-stat"><span>Derrotas</span>${num(item.losses)}</div><div class="tm-stat"><span>Aproveitamento</span>${TM.fmt(item.winRate)}%</div><div class="tm-stat"><span>Saldo de sets</span>${num(item.setDiff)>0?'+':''}${num(item.setDiff)}</div></article>`).join('')}`;
+    ui.tmRanking.scrollLeft=0;
   }
   function renderMatches(matches=[]){if(!ui.tmMatches)return;ui.tmMatches.innerHTML=matches.length?matches.map(match=>`<article class="tm-match${match.status==='EM_ANDAMENTO'?' live':''}${match.status==='FINALIZADO'?' final':''}"><div class="tm-match-head"><strong>Jogo ${num(match.game)} <small>• Rodada ${num(match.round)}</small></strong><span class="tm-match-status">${esc(match.status)}</span></div><div class="tm-versus"><article class="${match.winnerId===match.player1Id?'winner':''}"><strong>${esc(match.player1)}</strong><small>${match.status==='FINALIZADO'?`${num(match.sets1)} sets`:'Participante 1'}</small></article><span>×</span><article class="${match.winnerId===match.player2Id?'winner':''}"><strong>${esc(match.player2)}</strong><small>${match.status==='FINALIZADO'?`${num(match.sets2)} sets`:'Participante 2'}</small></article></div><div class="tm-score-summary">${esc(scoreText(match))}</div></article>`).join(''):empty('Os jogos ainda não foram gerados.');}
   function ensureNextPanel(data){let panel=document.getElementById('pa31NextTennis');const champ=data.championship,upcoming=champ&&['NAO_INICIADO','SORTEADO'].includes(String(champ.status||'').toUpperCase())&&(data.matches||[]).length;if(!upcoming){panel?.remove();return;}if(!panel){panel=document.createElement('section');panel.id='pa31NextTennis';panel.className='tm-panel tm-span-12 pa31-next-panel';document.querySelector('.tm-grid')?.insertBefore(panel,document.getElementById('ranking'));}panel.innerHTML=`<div class="tm-panel-head"><div><span class="tm-kicker" style="background:#e7faf4;color:#087556">PRÓXIMO CAMPEONATO</span><h2>${esc(champ.name||'Campeonato preparado')}</h2><p>Participantes e confrontos já definidos, aguardando o início.</p></div><span class="tm-chip">${(data.matches||[]).length} jogos</span></div><div class="pa31-next-grid">${(data.participants||[]).map(p=>`<article class="pa31-next-card"><strong>${esc(p.name)}</strong><small>Participante ${num(p.order)}</small></article>`).join('')}</div><div class="pa31-next-games">${(data.matches||[]).map(m=>`<div class="pa31-next-game">Jogo ${num(m.game)} — ${esc(m.player1)} × ${esc(m.player2)} <span class="pa31-next-status">${esc(m.status)}</span></div>`).join('')}</div>`;}
@@ -100,13 +101,13 @@
   }
   async function refresh(silent=false){
     clearTimeout(retryTimer);
-    try{const data=await quickState();render(data);loadScopes(true);}
+    try{const data=await quickState();render(data);await loadScopes(true);}
     catch(error){const cached=cacheRead();if(cached&&!state)render(cached,'Exibindo os últimos dados disponíveis');else if(ui.tmConnection)ui.tmConnection.textContent='Atualização temporariamente indisponível. Nova tentativa automática.';if(!silent&&!state)TM.toast('Não foi possível atualizar agora. O sistema tentará novamente.','warn');retryTimer=setTimeout(()=>refresh(true),12000);}
   }
   ui.tmSignupForm?.addEventListener('submit',async event=>{event.preventDefault();ui.tmSignupButton.disabled=true;ui.tmSignupButton.textContent='Inscrevendo...';try{const result=await TM.request('tmInscrever',{nome:ui.tmSignupName.value,idade:ui.tmSignupAge.value,sexo:ui.tmSignupSex.value});ui.tmSignupMessage.textContent=result.message||'Inscrição confirmada.';ui.tmSignupForm.reset();TM.toast(result.message||'Inscrição confirmada.');refresh(true);}catch(error){ui.tmSignupMessage.textContent=error.message;TM.toast(error.message,'error');}finally{ui.tmSignupButton.disabled=false;ui.tmSignupButton.textContent='Confirmar inscrição';}});
 
   const cached=cacheRead();if(cached)setTimeout(()=>{if(!networkRendered&&!state)render(cached,'Exibindo os últimos dados disponíveis');},1400);
-  refresh(Boolean(cached));loadScopes();
-  setInterval(()=>{refresh(true);loadScopes(true);},20000);
+  refresh(Boolean(cached));
+  setInterval(()=>refresh(true),20000);
   setInterval(()=>{if(Date.now()<heroPauseUntil||!scopeData?.freeSummary?.games)return;heroMode=heroMode==='CAMPEONATO'?'AVULSOS':'CAMPEONATO';renderHero();},10000);
 })();
