@@ -60,8 +60,6 @@
     if (document.body?.dataset.page !== 'tenis-mesa-admin' || !window.TenisMesa) return;
     const status = document.getElementById('tmAdminConnection');
     const refresh = document.getElementById('tmRefresh');
-    const footerVersion = document.querySelector('.tm-footer span:last-child');
-    if (footerVersion) footerVersion.textContent = 'V031';
     let attempts = 0;
 
     async function recover() {
