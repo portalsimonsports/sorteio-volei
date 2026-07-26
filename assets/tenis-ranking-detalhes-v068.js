@@ -69,6 +69,23 @@
     lastTrigger?.focus?.();
   }
 
+  function historyStandardResult(item, type) {
+    const isWins = type === 'VITORIAS';
+    const winnerPoints = Math.max(1, Number(item.basePoints || 5));
+    const lead = Math.max(1, Number(item.minimumLead || 2));
+    const loserPoints = Math.max(0, winnerPoints - lead);
+    const playerPoints = isWins ? winnerPoints : loserPoints;
+    const opponentPoints = isWins ? loserPoints : winnerPoints;
+    const setsFor = isWins ? 1 : 0;
+    const setsAgainst = isWins ? 0 : 1;
+    return {
+      label: isWins ? 'Vitória' : 'Derrota',
+      scoreText: `${playerPoints} × ${opponentPoints}`,
+      setsText: `${setsFor} × ${setsAgainst}`,
+      quantity: Math.max(0, Number(item.count || (isWins ? item.wins : item.losses) || 0))
+    };
+  }
+
   function resultCard(item, type) {
     const isHistory = item.kind === 'HISTORICO';
     const isWins = type === 'VITORIAS';
@@ -79,8 +96,9 @@
     let note = '';
 
     if (isHistory) {
-      resultLine = `${plural(Number(item.wins || 0), 'vitória', 'vitórias')} e ${plural(Number(item.losses || 0), 'derrota', 'derrotas')} neste lançamento`;
-      sourceLine += ` • ${Number(item.games || 0)} confrontos • base ${Number(item.basePoints || 0)} pontos • diferença ${Number(item.minimumLead || 2)}`;
+      const standard = historyStandardResult(item, type);
+      resultLine = `${standard.label} • ${standard.scoreText} • Sets ${standard.setsText}`;
+      sourceLine += ` • ${plural(standard.quantity, 'confronto deste tipo', 'confrontos deste tipo')} • ${Number(item.games || 0)} confrontos totais • diferença ${Number(item.minimumLead || 2)}`;
       if (item.observation) note = `<p class="tm68-result-note">${TM.esc(item.observation)}</p>`;
     } else {
       resultLine = `${isWins ? 'Vitória' : 'Derrota'} • ${TM.esc(item.scoreText || 'Placar não informado')} • Sets ${Number(item.setsFor || 0)} × ${Number(item.setsAgainst || 0)}`;
