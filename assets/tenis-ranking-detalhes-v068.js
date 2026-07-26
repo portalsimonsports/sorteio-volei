@@ -23,6 +23,14 @@
     return `${total} ${total === 1 ? singular : pluralText}`;
   }
 
+  function normalizeName(value) {
+    return String(value || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLocaleLowerCase('pt-BR');
+  }
+
   function ensureModal() {
     if (modal) return modal;
     modal = document.createElement('div');
@@ -76,40 +84,104 @@
     const loserPoints = Math.max(0, winnerPoints - lead);
     const playerPoints = isWins ? winnerPoints : loserPoints;
     const opponentPoints = isWins ? loserPoints : winnerPoints;
-    const setsFor = isWins ? 1 : 0;
-    const setsAgainst = isWins ? 0 : 1;
     return {
-      label: isWins ? 'Vitória' : 'Derrota',
       scoreText: `${playerPoints} × ${opponentPoints}`,
-      setsText: `${setsFor} × ${setsAgainst}`,
+      setsText: isWins ? '1 × 0' : '0 × 1',
       quantity: Math.max(0, Number(item.count || (isWins ? item.wins : item.losses) || 0))
     };
   }
 
-  function resultCard(item, type) {
+  function describeItem(item, type) {
     const isHistory = item.kind === 'HISTORICO';
     const isWins = type === 'VITORIAS';
+    const standard = isHistory ? historyStandardResult(item, type) : null;
     const source = isHistory ? 'Histórico consolidado' : (item.source === 'CAMPEONATO' ? 'Campeonato' : 'Jogo avulso');
-    const date = item.dateText ? `<span class="tm68-result-date">${TM.esc(item.dateText)}</span>` : '';
-    let resultLine = '';
-    let sourceLine = TM.esc(item.sourceLabel || source);
-    let note = '';
+    const sourceLabel = String(item.sourceLabel || source).trim();
+    const scoreText = isHistory ? standard.scoreText : String(item.scoreText || 'Placar não informado');
+    const setsText = isHistory ? standard.setsText : `${Number(item.setsFor || 0)} × ${Number(item.setsAgainst || 0)}`;
+    const quantity = isHistory ? standard.quantity : Math.max(1, Number(item.count || 1));
+    const extra = [];
 
     if (isHistory) {
-      const standard = historyStandardResult(item, type);
-      resultLine = `${standard.label} • ${standard.scoreText} • Sets ${standard.setsText}`;
-      sourceLine += ` • ${plural(standard.quantity, 'confronto deste tipo', 'confrontos deste tipo')} • ${Number(item.games || 0)} confrontos totais • diferença ${Number(item.minimumLead || 2)}`;
-      if (item.observation) note = `<p class="tm68-result-note">${TM.esc(item.observation)}</p>`;
-    } else {
-      resultLine = `${isWins ? 'Vitória' : 'Derrota'} • ${TM.esc(item.scoreText || 'Placar não informado')} • Sets ${Number(item.setsFor || 0)} × ${Number(item.setsAgainst || 0)}`;
-      if (item.game) sourceLine += ` • Jogo ${Number(item.game)}`;
+      extra.push(`diferença ${Math.max(1, Number(item.minimumLead || 2))}`);
+    } else if (item.game) {
+      extra.push(`Jogo ${Number(item.game)}`);
     }
 
-    return `<article class="tm68-result-card ${isWins ? 'win' : 'loss'}${isHistory ? ' history' : ''}">
-      <div class="tm68-result-meta"><span class="tm68-result-badge">${source}</span>${date}</div>
-      <h3>contra ${TM.esc(item.opponent || 'Adversário')}</h3>
-      <p class="tm68-result-line">${resultLine}</p>
-      <p class="tm68-result-source">${sourceLine}</p>${note}
+    return {
+      opponent: String(item.opponent || 'Adversário').trim(),
+      source,
+      sourceLabel,
+      scoreText,
+      setsText,
+      quantity,
+      dateText: String(item.dateText || '').trim(),
+      observation: String(item.observation || '').trim(),
+      extra: extra.join(' • '),
+      isHistory,
+      resultLabel: isWins ? 'vitória' : 'derrota'
+    };
+  }
+
+  function groupByOpponent(items, type) {
+    const groups = new Map();
+
+    items.forEach(item => {
+      const detail = describeItem(item, type);
+      const opponentKey = normalizeName(detail.opponent) || 'adversario';
+      let group = groups.get(opponentKey);
+      if (!group) {
+        group = {
+          opponent: detail.opponent,
+          total: 0,
+          latestDate: '',
+          details: new Map(),
+          observations: new Set()
+        };
+        groups.set(opponentKey, group);
+      }
+
+      group.total += detail.quantity;
+      if (!group.latestDate && detail.dateText) group.latestDate = detail.dateText;
+      if (detail.observation) group.observations.add(detail.observation);
+
+      const detailKey = [detail.scoreText, detail.setsText, detail.source, detail.sourceLabel, detail.extra].join('|');
+      let accumulated = group.details.get(detailKey);
+      if (!accumulated) {
+        accumulated = { ...detail, quantity: 0, dates: [] };
+        group.details.set(detailKey, accumulated);
+      }
+      accumulated.quantity += detail.quantity;
+      if (detail.dateText && !accumulated.dates.includes(detail.dateText)) accumulated.dates.push(detail.dateText);
+    });
+
+    return [...groups.values()]
+      .map(group => ({ ...group, details: [...group.details.values()].sort((a, b) => b.quantity - a.quantity) }))
+      .sort((a, b) => b.total - a.total || a.opponent.localeCompare(b.opponent, 'pt-BR'));
+  }
+
+  function groupedCard(group, type) {
+    const isWins = type === 'VITORIAS';
+    const resultWord = isWins ? 'vitória' : 'derrota';
+    const resultWords = isWins ? 'vitórias' : 'derrotas';
+    const date = group.latestDate ? `<span class="tm68-result-date">Último registro: ${TM.esc(group.latestDate)}</span>` : '';
+    const breakdown = group.details.map(detail => {
+      const sourceText = [detail.sourceLabel, detail.extra].filter(Boolean).join(' • ');
+      const datesText = detail.dates.length > 1 ? ` • ${plural(detail.dates.length, 'lançamento', 'lançamentos')}` : '';
+      return `<div class="tm68-breakdown-row">
+        <strong>${plural(detail.quantity, resultWord, resultWords)}</strong>
+        <span>${TM.esc(detail.scoreText)} • Sets ${TM.esc(detail.setsText)}</span>
+        <small>${TM.esc(sourceText)}${datesText}</small>
+      </div>`;
+    }).join('');
+    const notes = [...group.observations];
+    const note = notes.length ? `<details class="tm68-group-notes"><summary>Observações (${notes.length})</summary>${notes.map(value => `<p>${TM.esc(value)}</p>`).join('')}</details>` : '';
+
+    return `<article class="tm68-result-card tm68-opponent-card ${isWins ? 'win' : 'loss'}">
+      <div class="tm68-result-meta"><span class="tm68-result-badge">${plural(group.total, resultWord, resultWords)}</span>${date}</div>
+      <h3>contra ${TM.esc(group.opponent)}</h3>
+      <p class="tm68-opponent-total">${plural(group.total, resultWord, resultWords)} contra este participante no recorte selecionado.</p>
+      <div class="tm68-breakdown-list">${breakdown}</div>${note}
     </article>`;
   }
 
@@ -117,10 +189,12 @@
     const dialog = ensureModal();
     const isWins = type === 'VITORIAS';
     const total = Number(data?.total || 0);
-    dialog.querySelector('[data-tm68-summary]').textContent = `${plural(total, isWins ? 'vitória' : 'derrota', isWins ? 'vitórias' : 'derrotas')} no recorte selecionado.`;
-    const body = dialog.querySelector('[data-tm68-body]');
     const items = Array.isArray(data?.items) ? data.items : [];
-    body.innerHTML = items.length ? `<div class="tm68-result-list">${items.map(item => resultCard(item, type)).join('')}</div>` : `<div class="tm68-empty">Nenhum resultado encontrado neste recorte.</div>`;
+    const groups = groupByOpponent(items, type);
+    const opponentCount = groups.length;
+    dialog.querySelector('[data-tm68-summary]').textContent = `${plural(total, isWins ? 'vitória' : 'derrota', isWins ? 'vitórias' : 'derrotas')} contra ${plural(opponentCount, 'adversário', 'adversários')} no recorte selecionado.`;
+    const body = dialog.querySelector('[data-tm68-body]');
+    body.innerHTML = groups.length ? `<div class="tm68-result-list">${groups.map(group => groupedCard(group, type)).join('')}</div>` : `<div class="tm68-empty">Nenhum resultado encontrado neste recorte.</div>`;
   }
 
   function renderError(error) {
